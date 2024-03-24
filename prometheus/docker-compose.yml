@@ -1,0 +1,31 @@
+version: "3.3"
+
+services:
+  grafana:
+    container_name: grafana-localhost
+    image: grafana/grafana:latest
+    restart: always
+    ports:
+      - 3000:3000
+    environment:
+      GF_SECURITY_ADMIN_USER: admin          # Username ของผู้ดูแลระบบ
+      GF_SECURITY_ADMIN_PASSWORD: admin  # กำหนดรหัสผ่านที่นี่
+      GF_SERVER_ROOT_URL: http://grafana.server.name
+
+  prometheus:
+    container_name: prometheus-localhost
+    image: prom/prometheus
+    restart: always
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    ports:
+      - 9090:9090
+
+  prometheus-node-exporter:
+    container_name: prometheus-node-exporter-localhost
+    image: prom/node-exporter
+    restart: always
+    depends_on:
+      - prometheus
+    ports:
+      - 9100:9100
