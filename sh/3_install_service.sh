@@ -15,7 +15,6 @@ else
     exit 1
 fi
 
-
 ################################################################################################
 # ขอให้ผู้ใช้ป้อนชื่อเครื่องใหม่
 read -p "Enter new hostname: " new_hostname
@@ -163,7 +162,6 @@ echo "ข้อมูลที่ได้รับ: $data"
 # ทำสิ่งต่างๆ ต่อด้วยข้อมูลที่ได้ (ตัวอย่างเช่น บันทึกลงไฟล์)
 # echo $data > somefile.txt
 
-
 #tailscale up --auth-key=$data --operator=ubuntu
 
 
@@ -208,4 +206,3 @@ echo "Install Completed"
 # sudo journalctl -u gpucloud_client -f
 # sudo systemctl restart gpucloud_client
 # sudo systemctl stop gpucloud_client
-
