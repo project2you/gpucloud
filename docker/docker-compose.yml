@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  gpucloud-app:
+    build: .
+    ports:
+      - "5002:5002"
+      - "8000:8000"
+      - "8888:8888"
+    volumes:
+      - .:/app
