@@ -283,45 +283,60 @@ add-apt-repository ppa:deadsnakes/ppa -y
 # Update the package list
 apt-get update
 
-# Install Python 3.10
+# Install Python 3.10 and the Python 3.10 development and venv packages
 apt-get install python3.10 python3.10-venv python3.10-dev -y
 
-# If /usr/bin/python exists, back it up
-if [ -f "/usr/bin/python" ]; then
-  mv /usr/bin/python /usr/bin/python_backup
+# Check if pip is installed for Python 3.10 and install it if it's not present
+if ! command -v pip3.10 &> /dev/null; then
+    apt-get install python3-pip -y
+    update-alternatives --install /usr/bin/pip pip /usr/bin/pip3.10 1
 fi
 
-# Create a symbolic link for python to point to python3.10
-ln -s /usr/bin/python3.10 /usr/bin/python
+# Ensure pip, python point to the pip3.10, python3.10 respectively
+update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1
+update-alternatives --install /usr/bin/pip pip /usr/bin/pip3.10 1
 
-# Confirm the action
-echo "Python 3.10 is now installed and the 'python' command now refers to Python 3.10."
-echo "Running 'python --version' to display the Python version:"
+# Confirm the actions
+echo "Python 3.10 and pip have been installed and configured."
+echo "Running 'python --version' and 'pip --version' to display the versions:"
 python --version
+pip --version
 
 
 
 # สร้างสภาพแวดล้อมเสมือนใหม่
-echo "Creating new virtual environment..."
-python -m venv $ENV_PATH
-echo "Virtual environment created at $ENV_PATH"
-
-# Set environment variable paths
+# Define the environment variable paths
 ENV_PATH="/opt/gpuspeed/env"
 SCRIPT_PATH="/opt/gpuspeed/app.py"
 SERVICE_NAME="gpuspeed_client"
 SERVICE_PATH="/etc/systemd/system/$SERVICE_NAME.service"
 
-# Activate the environment and update pip
-source /opt/gpuspeed/env/bin/activate
+# Create a new virtual environment
+echo "Creating new virtual environment..."
+python -m venv $ENV_PATH
+echo "Virtual environment created at $ENV_PATH"
+
+# Activate the environment
+source $ENV_PATH/bin/activate
+
+# Update pip to the latest version
+echo "Updating pip..."
 pip install --upgrade pip
 
-# Download requirements.txt and install dependencies
+# Download the requirements.txt file and install dependencies
+echo "Downloading and installing dependencies..."
 wget -O "$ENV_PATH/requirements.txt" https://raw.githubusercontent.com/project2you/gpuspeed.net/main/client/requirements.txt
 pip install -r "$ENV_PATH/requirements.txt"
+
+# Install additional packages
 pip install torch torchvision gunicorn Flask APScheduler requests
+
+# Install a specific version of speedtest
 pip install speedtest==0.0.1
-echo "Python packages installed."
+
+echo "Python packages installed successfully."
+
+
 
 # Move the .env configuration file
 if [ -f ".env" ]; then
