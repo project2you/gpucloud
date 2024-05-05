@@ -279,46 +279,9 @@ if [ ! -d "$ENV_PATH" ]; then
     python3 -m venv $ENV_PATH
 fi
 
-
-# Check if requirements file can be downloaded
-if curl --output /dev/null --silent --head --fail "$requirements_url"; then
-    echo "Downloading requirements.txt..."
-    curl -L "$requirements_url" -o "$ENV_PATH/requirements.txt"
-else
-    echo "Failed to download requirements.txt. Exiting."
-    exit 1
-fi
-
-# Define the URL and the local path for the requirements.txt
-requirements_url="https://raw.githubusercontent.com/project2you/gpuspeed.net/main/client/requirements.txt"
-requirements_file="/opt/gpuspeed/env/requirements.txt"
-
-# Ensure the directory for requirements_file exists
-if [ ! -d "$(dirname "$requirements_file")" ]; then
-    echo "Creating directory for requirements file..."
-    mkdir -p "$(dirname "$requirements_file")"
-fi
-
-# Download the requirements.txt file
-echo "Attempting to download requirements.txt from $requirements_url..."
-if wget -O "$requirements_file" "$requirements_url"; then
-    echo "Successfully downloaded requirements.txt."
-else
-    echo "Failed to download requirements.txt. Please check the URL or your internet connection. Exiting."
-    exit 1
-fi
-
-
-
-# Install dependencies from the requirements.txt file
-if [ -f "$ENV_PATH/requirements.txt" ]; then
-    echo "Installing Python packages..."
-    pip install -r "$ENV_PATH/requirements.txt"
-else
-    echo "requirements.txt does not exist. Please check the URL or path."
-    exit 1
-fi
-
+wget https://raw.githubusercontent.com/project2you/gpuspeed.net/main/client/requirements.txt
+echo "Installing Python packages..."
+mv requirements.txt $ENV_PATH
 
 
 # Activate environment and install dependencies
