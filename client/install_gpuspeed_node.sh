@@ -291,6 +291,15 @@ fi
 
 requirements_url="https://raw.githubusercontent.com/project2you/gpuspeed.net/main/client/requirements.txt"
 
+# Download the requirements.txt file
+echo "Attempting to download requirements.txt from $requirements_url..."
+if wget -O "$requirements_file" "$requirements_url"; then
+    echo "Successfully downloaded requirements.txt."
+else
+    echo "Failed to download requirements.txt. Please check the URL or your internet connection. Exiting."
+    exit 1
+fi
+
 # Install dependencies from the requirements.txt file
 if [ -f "$ENV_PATH/requirements.txt" ]; then
     echo "Installing Python packages..."
