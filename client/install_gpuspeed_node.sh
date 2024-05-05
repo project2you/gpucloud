@@ -267,9 +267,9 @@ echo "Setup complete. Environment is ready."
 SCRIPT_PATH="/opt/gpuspeed/app.py"
 SERVICE_NAME="gpuspeed_client"
 SERVICE_PATH="/etc/systemd/system/$SERVICE_NAME.service"
-ENV_PATH="/opt/gpuspeed/"
+ENV_PATH="/opt/gpuspeed"
 
-sudo mv .env "/opt/gpuspeed/"
+sudo mv .env "/opt/gpuspeed"
 
 # Download the app.py script from GitHub
 echo "Downloading app.py from GitHub..."
