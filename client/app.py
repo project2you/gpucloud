@@ -734,10 +734,11 @@ def test_internet_speed():
         download_speed = st.download() / 1_000_000  # Convert from bits/s to Mbits/s
         upload_speed = st.upload() / 1_000_000  # Convert from bits/s to Mbits/s
 
-        return download_speed, upload_speed
+        # Formatting the speeds as strings with two decimal places
+        return {"network_down": f"{download_speed:.2f}", "network_up": f"{upload_speed:.2f}"}
     except Exception as e:
         print(f"An error occurred: {e}")
-        return None, None
+        return {"network_down": None, "network_up": None}
 
 #เริ่มต้นในส่วนของการดึงค่า Infomation ของ Client ต่าง ๆ ออกมาแสดง 
 #เพื่อส่งกลับไปที่ Tail.py :5001
@@ -767,9 +768,10 @@ def info():
         uptime()
 
         #Call speed_test
-        download, upload = test_internet_speed()
-        print(f"Download Speed: {download:.2f} Mbps")
-        print(f"Upload Speed: {upload:.2f} Mbps")
+        speeds_net = test_internet_speed()
+        print(f"Download Speed: {speeds_net['network_down']} Mbps")
+        print(f"Upload Speed: {speeds_net['network_up']} Mbps")
+        
     
         # แทนที่ 'tailscale0' ด้วยชื่ออินเทอร์เฟสที่คุณต้องการดึงข้อมูล
         interface_name = 'tailscale0'
@@ -821,8 +823,8 @@ def info():
             "gpu_speed": str(f"{info_gpu_speed:.2f}") +' GB/s',
             "gpu_tflops" : info_gpu_flops,
             "region": str(get_location()),
-            "network_up": str(upload:.2f),
-            "network_down": str(download:.2f),
+            "network_up": str(speeds_net['network_up']),
+            "network_down": str(speeds_net['network_down']),
             "online_duration": str(info_uptime_days) ,
             "ip": str(ip_address),
             'id_user':'user_0001',
