@@ -14,21 +14,6 @@ fi
 directory="/etc/gpuspeed"
 service_name="gpuspeed_client"
 
-
-# กำหนดตัวแปรสำหรับ path ของ virtual environment
-ENV_PATH="/opt/gpuspeed/env"
-
-# ตรวจสอบว่า directory นี้มีอยู่หรือไม่
-if [ -d "$ENV_PATH" ]; then
-    echo "พบ directory $ENV_PATH. กำลังทำการลบ..."
-    sudo rm -rf "$ENV_PATH"
-    echo "Directory ถูกลบเรียบร้อยแล้ว."
-else
-    echo "ไม่พบ directory $ENV_PATH. ไม่มีการดำเนินการใดๆ."
-fi
-
-
-
 # Check if the script is run as root
 if [ "$(id -u)" -ne 0 ]; then
     echo "This script must be run as root. Please use 'sudo' or log in as root to run this script."
@@ -242,34 +227,45 @@ echo "Restarting Docker service..."
 sudo systemctl restart docker
 echo "Docker service restarted."
 
+# กำหนดตัวแปรสำหรับทที่ตตั้งของสภาพแวดล้อมเสมือน
+ENV_PATH="/opt/gpuspeed/env"
+
+
+sudo apt install python3.10-venv
+
+# ตรวจสอบและติดตตั้ง Python3 และ venv ถ้ายังไม่ได้ติดตตั้ง
+if ! command -v python3 &> /dev/null; then
+    echo "Python3 is not installed. Installing Python3 and its venv module..."
+    sudo apt update
+    sudo apt install python3 python3-venv -y
+fi
+
+# ลบสภาพแวดล้อมเสมือนเดิมถ้ามีอยยู่
+if [ -d "$ENV_PATH" ]; then
+    echo "Removing existing virtual environment..."
+    sudo rm -rf "$ENV_PATH"
+fi
+
+# สร้างสภาพแวดล้อมเสมือนใหม่
+echo "Creating new virtual environment..."
+python3 -m venv $ENV_PATH
+echo "Virtual environment created at $ENV_PATH"
+
+# สร้าง symlink จาก python3 ไปยัง python
+if [ -f "$ENV_PATH/bin/python3" ] && [ ! -f "$ENV_PATH/bin/python" ]; then
+    echo "Creating symlink from python3 to python in the virtual environment..."
+    ln -s python3 $ENV_PATH/bin/python
+fi
+
+echo "Setup complete. Environment is ready."
+
+
 
 # Set environment variable paths
 ENV_PATH="/opt/gpuspeed/env"
 SCRIPT_PATH="/opt/gpuspeed/app.py"
 SERVICE_NAME="gpuspeed_client"
 SERVICE_PATH="/etc/systemd/system/$SERVICE_NAME.service"
-
-# Ensure the base directory exists
-if [ ! -d "/opt/gpuspeed" ]; then
-    sudo mkdir -p "/opt/gpuspeed"
-    echo "Base directory /opt/gpuspeed created."
-fi
-
-# Check and install Python3 and pip if not already installed
-if ! command -v python3 &> /dev/null; then
-    echo "Python3 is not installed. Installing Python3..."
-    sudo apt-get update
-    sudo apt-get install python3 python3-pip python3-venv -y
-fi
-
-# Check and create virtual environment if it doesn't exist
-if [ ! -d "$ENV_PATH" ]; then
-    echo "Virtual environment not found at $ENV_PATH. Creating one now..."
-    echo "Virtual environment created at $ENV_PATH"
-    python3 -m venv /opt/gpuspeed/env  # สร้างสภาพแวดล้อมเสมือนใหม่
-else
-    echo "Virtual environment already exists at $ENV_PATH."
-fi
 
 # Activate the environment and update pip
 source $ENV_PATH/bin/activate
@@ -305,7 +301,7 @@ cat <<EOF | sudo tee $SERVICE_PATH
 Description=gpuspeed.net client Service
 
 [Service]
-ExecStart=/bin/bash -c 'source /opt/gpuspeed/env/bin/activate && cd /opt/gpuspeed && gunicorn -w 2 -b 0.0.0.0:5002 app:app'
+ExecStart=/bin/bash -c 'source $ENV_PATH/bin/activate && cd /opt/gpuspeed && gunicorn -w 2 -b 0.0.0.0:5002 app:app'
 
 [Install]
 WantedBy=multi-user.target
@@ -346,7 +342,6 @@ echo "Installation Completed"
 
 sudo systemctl daemon-reload
 sudo systemctl restart gpuspeed_client.service
-
 
 
 # sudo journalctl -u gpuspeed_client -f
