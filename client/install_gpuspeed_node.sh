@@ -257,10 +257,18 @@ EOF
     echo "File $DAEMON_FILE created successfully."
 fi
 
+sudo usermod -aG docker $USER
+newgrp docker
+
 # Restart Docker service
 echo "Restarting Docker service..."
 sudo systemctl restart docker
 echo "Docker service restarted."
+
+# pull images
+echo "Pulling Docker iamges..."
+docker pull project2you/jupyter-nvidia-gpucloud:1.0
+
 
 # กำหนดตัวแปรสำหรับทที่ตตั้งของสภาพแวดล้อมเสมือน
 ENV_PATH="/opt/gpuspeed/env"
