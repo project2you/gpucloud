@@ -317,7 +317,12 @@ echo "Service $SERVICE_NAME has been created and started."
 
 echo "Setup complete. Environment is ready."
 
+
+
 # VPN setup
+curl -fsSL https://tailscale.com/install.sh | sh
+
+
 URL="https://tailscale.gpuspeed.net/genkey"
 data=$(curl -s $URL)
 
@@ -328,7 +333,7 @@ if [ -z "$data" ]; then
 fi
 
 echo "Data received: $data"
-# tailscale up --auth-key=$data --operator=ubuntu
+tailscale up --auth-key=$data --operator=ubuntu
 
 #Install node-exporter
 sudo docker pull prom/node-exporter
