@@ -3,12 +3,12 @@
 sudo apt update
 sudo apt upgrade -y
 
-
 # Check if the script is run as root
 if [ "$(id -u)" -ne 0 ]; then
   echo "This script must be run as root" 1>&2
   exit 1
 fi
+
 
 # Create the directory in /etc
 directory="/etc/gpuspeed"
@@ -231,16 +231,43 @@ sudo systemctl restart docker
 echo "Docker service restarted."
 
 
+# Step 3: Set up script and service name
 # Ensure the directory exists
 if [ ! -d "/opt/gpuspeed" ]; then
     sudo mkdir -p /opt/gpuspeed
 fi
 
-# Step 3: Set up script and service name
+# Check and create virtual environment if it doesn't exist
+if [ ! -d "$ENV_PATH" ]; then
+    echo "Virtual environment not found. Creating one now..."
+    python3 -m venv $ENV_PATH
+    echo "Virtual environment created at $ENV_PATH"
+else
+    echo "Virtual environment already exists."
+fi
+
+# Activate the environment and install dependencies
+source $ENV_PATH/bin/activate
+pip install --upgrade pip
+
+# Assuming you have a requirements.txt available locally or need to download one
+pip install -r /path/to/requirements.txt
+
+# Exit from virtual environment
+deactivate
+
+echo "Setup complete. Environment is ready."
+
+
+
+
+
+
+
 SCRIPT_PATH="/opt/gpuspeed/app.py"
 SERVICE_NAME="gpuspeed_client"
 SERVICE_PATH="/etc/systemd/system/$SERVICE_NAME.service"
-ENV_PATH="/opt/gpuspeed/env"
+ENV_PATH="/opt/gpuspeed/"
 
 sudo mv .env "/opt/gpuspeed/"
 
