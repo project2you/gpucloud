@@ -250,9 +250,26 @@ if [ ! -d "$ENV_PATH" ]; then
 fi
 
 
-# Download the app.py script from GitHub
-echo "Downloading requirements.txt from GitHub..."
-curl -L https://raw.githubusercontent.com/project2you/gpuspeed.net/main/client/requirements.txt 
+# Check if requirements file can be downloaded
+if curl --output /dev/null --silent --head --fail "$requirements_url"; then
+    echo "Downloading requirements.txt..."
+    curl -L "$requirements_url" -o "$ENV_PATH/requirements.txt"
+else
+    echo "Failed to download requirements.txt. Exiting."
+    exit 1
+fi
+
+requirements_url="https://raw.githubusercontent.com/project2you/gpuspeed.net/main/client/requirements.txt"
+
+# Install dependencies from the requirements.txt file
+if [ -f "$ENV_PATH/requirements.txt" ]; then
+    echo "Installing Python packages..."
+    pip install -r "$ENV_PATH/requirements.txt"
+else
+    echo "requirements.txt does not exist. Please check the URL or path."
+    exit 1
+fi
+
 
 
 # Activate environment and install dependencies
