@@ -3,11 +3,13 @@ import torch
 from datetime import datetime , timedelta
 import time
 from flask import Flask, request, jsonify 
-from requests.adapters import HTTPAdapter
+
+import requests
+#from requests.adapters import HTTPAdapter
 import socket
 import speedtest
 from time import sleep
-import requests
+
 import docker
 
 import socket
