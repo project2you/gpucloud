@@ -270,7 +270,6 @@ docker pull project2you/jupyter-nvidia-gpucloud:1.0
 # กำหนดตัวแปรสำหรับทที่ตตั้งของสภาพแวดล้อมเสมือน
 ENV_PATH="/opt/gpuspeed/env"
 
-
 sudo apt install python3.10-venv
 
 # ตรวจสอบและติดตตั้ง Python3 และ venv ถ้ายังไม่ได้ติดตตั้ง
@@ -286,6 +285,50 @@ if [ -d "$ENV_PATH" ]; then
     sudo rm -rf "$ENV_PATH"
 fi
 
+#!/bin/bash
+
+# Path to the python3.10 executable
+PYTHON310_PATH=$(which python3.10)
+
+# Check if python3.10 is installed
+if [ -z "$PYTHON310_PATH" ]; then
+  echo "python3.10 is not installed. Please install it before running this script."
+  exit 1
+fi
+
+echo "Using python3.10 at $PYTHON310_PATH"
+
+# Backup and create symlinks for python and python3
+update_alternative() {
+  local cmd=$1
+  local path="/usr/bin/$cmd"
+
+  # Check if the command already points to the correct Python version
+  if [ "$(readlink -f $path)" = "$PYTHON310_PATH" ]; then
+    echo "$cmd is already set to python3.10"
+  else
+    # Backup the existing version if it's not a symlink to python3.10
+    if [ -e "$path" ] && [ "$(readlink -f $path)" != "$PYTHON310_PATH" ]; then
+      sudo mv $path ${path}_backup
+      echo "Backed up the existing $cmd executable to ${path}_backup"
+    fi
+
+    # Create a new symlink
+    sudo ln -sf $PYTHON310_PATH $path
+    echo "Linked $cmd to python3.10"
+  fi
+}
+
+# Update python and python3 to point to python3.10
+update_alternative "python"
+update_alternative "python3"
+
+# Verify the changes
+echo "Verification:"
+echo "python version: $(python --version)"
+echo "python3 version: $(python3 --version)"
+
+
 # สร้างสภาพแวดล้อมเสมือนใหม่
 echo "Creating new virtual environment..."
 python3 -m venv $ENV_PATH
@@ -298,7 +341,6 @@ if [ -f "$ENV_PATH/bin/python3" ] && [ ! -f "$ENV_PATH/bin/python" ]; then
 fi
 
 echo "Setup complete. Environment is ready."
-
 
 
 # Set environment variable paths
