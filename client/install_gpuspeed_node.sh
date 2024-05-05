@@ -281,11 +281,15 @@ fi
 add-apt-repository ppa:deadsnakes/ppa -y
 
 # Update the package list
-sudo apt-get update
+sudo apt-get update -y
+
+#sudo apt install nvidia-cuda-toolkit -y
+sudo apt install build-essential -y
 
 #install Cuda
-sudo apt install nvidia-cuda-toolkit -y
-sudo apt install build-essential -y
+wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
+sudo dpkg -i cuda-keyring_1.1-1_all.deb
+sudo apt-get update
 
 
 # Install Python 3.10 and the Python 3.10 development and venv packages
