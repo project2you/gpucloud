@@ -162,15 +162,41 @@ sudo apt-get update
 
 sudo apt-get install -y nvidia-container-toolkit
 
+sudo chown -R $(whoami): /run/containerd/
+
 # ตั้งค่า Docker เพื่อใช้ NVIDIA runtime เป็นค่ามาตรฐาน
 sudo mkdir -p /etc/docker
 echo '{"default-runtime": "nvidia", "runtimes": {"nvidia": {"path": "nvidia-container-runtime", "runtimeArgs": []}}}' | sudo tee /etc/docker/daemon.json
+
+
+# Define the path to the Docker daemon configuration file
+DOCKER_CONFIG="/etc/docker/daemon.json"
+
+# Check if the Docker configuration file already exists
+if [ -f "$DOCKER_CONFIG" ]; then
+    echo "Docker daemon configuration file already exists."
+else
+    echo "Creating a new Docker daemon configuration file."
+    # Create a new Docker daemon configuration file with NVIDIA runtime settings
+    echo '{
+  "runtimes": {
+    "nvidia": {
+      "path": "/usr/bin/nvidia-container-runtime",
+      "runtimeArgs": []
+    }
+  },
+  "default-runtime": "nvidia"
+}' > $DOCKER_CONFIG
+fi
+
+# Restart Docker to apply changes
+echo "Restarting Docker service to apply changes."
+sudo systemctl restart docker
+
+echo "Docker is configured to use the NVIDIA runtime."
 
 # รีสตาร์ท Docker เพื่อให้การตั้งค่ามีผล
 sudo systemctl restart docker
 
 echo "Docker is now configured to use NVIDIA GPU."
-
-
-
 
