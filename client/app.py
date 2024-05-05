@@ -112,25 +112,6 @@ load_dotenv()
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
 
-def pull_docker_image(image_name):
-    """Function to pull a Docker image using subprocess."""
-    try:
-        print(f"Starting to pull {image_name}...")
-        process = subprocess.Popen(['docker', 'pull', image_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate()
-        if process.returncode == 0:
-            print(f"Successfully pulled {image_name}")
-        else:
-            print(f"Failed to pull {image_name} with error: {stderr.decode()}")
-    except Exception as e:
-        print(f"An error occurred: {str(e)}")
-
-# List of images to be downloaded
-images = [
-    'project2you/jupyter-nvidia-gpucloud:1.0',
-    # Add more images if necessary
-]
-
 # Constants for API endpoints and keys
 PROMETHEUS_API = os.environ.get('PROMETHEUS_API')  # e.g., 'http://192.168.1.41:9090/api/v1/targets'
 GRAFANA_API = os.environ.get('GRAFANA_API')  # e.g., 'http://192.168.1.41:3000/api/dashboards/db'
@@ -1057,10 +1038,6 @@ scheduler.start()
 
 # Set the task to schedule a new random time daily at midnight
 scheduler.add_job(schedule_daily_task, 'cron', hour=0, minute=0)
-
-# Use ThreadPoolExecutor to pull images in parallel
-with ThreadPoolExecutor(max_workers=len(images)) as executor:
-    executor.map(pull_docker_image, images)
     
 if __name__ == '__main__':
     try:
