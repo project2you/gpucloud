@@ -14,6 +14,36 @@ fi
 
 # Create the directory in /etc
 directory="/etc/gpuspeed"
+service_name="gpuspeed_client"
+
+# Check if the script is run as root
+if [ "$(id -u)" -ne 0 ]; then
+    echo "This script must be run as root. Please use 'sudo' or log in as root to run this script."
+    exit 1
+fi
+
+# Check if the directory exists
+if [ -d "$directory" ]; then
+    echo "Directory $directory exists."
+
+    # Check if the service is active and stop it
+    if systemctl is-active --quiet "$service_name"; then
+        echo "Service $service_name is currently active. Stopping service..."
+        systemctl stop "$service_name"
+        echo "Service $service_name stopped."
+    else
+        echo "Service $service_name is not active or does not exist."
+    fi
+
+    # Remove the directory
+    echo "Removing directory $directory..."
+    rm -rf "$directory"
+    echo "Directory $directory has been removed."
+else
+    echo "Directory $directory does not exist."
+fi
+
+
 
 if [ ! -d "$directory" ]; then
     mkdir "$directory"
