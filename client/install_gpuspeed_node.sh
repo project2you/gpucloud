@@ -363,9 +363,14 @@ echo "Creating systemd service file at $SERVICE_PATH"
 cat <<EOF | sudo tee $SERVICE_PATH
 [Unit]
 Description=gpuspeed.net client Service
+After=network.target
 
 [Service]
-ExecStart=/bin/bash -c 'source $ENV_PATH/bin/activate && cd /opt/gpuspeed && gunicorn -w 2 -b 0.0.0.0:5002 app:app'
+Environment=ENV_PATH=/opt/gpuspeed/env
+WorkingDirectory=/opt/gpuspeed
+ExecStart=/bin/bash -c 'source ${ENV_PATH}/bin/activate && exec gunicorn -w 2 -b 0.0.0.0:5002 app:app'
+User=youruser
+Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target
