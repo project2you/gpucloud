@@ -3,8 +3,6 @@
 sudo apt update
 sudo apt upgrade -y
 
-sudo apt install linux-headers-$(uname -r) build-essential
-
 
 # Check if the script is run as root
 if [ "$(id -u)" -ne 0 ]; then
