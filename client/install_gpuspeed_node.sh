@@ -289,7 +289,15 @@ else
     exit 1
 fi
 
+# Define the URL and the local path for the requirements.txt
 requirements_url="https://raw.githubusercontent.com/project2you/gpuspeed.net/main/client/requirements.txt"
+requirements_file="/opt/gpuspeed/env/requirements.txt"
+
+# Ensure the directory for requirements_file exists
+if [ ! -d "$(dirname "$requirements_file")" ]; then
+    echo "Creating directory for requirements file..."
+    mkdir -p "$(dirname "$requirements_file")"
+fi
 
 # Download the requirements.txt file
 echo "Attempting to download requirements.txt from $requirements_url..."
@@ -299,6 +307,8 @@ else
     echo "Failed to download requirements.txt. Please check the URL or your internet connection. Exiting."
     exit 1
 fi
+
+
 
 # Install dependencies from the requirements.txt file
 if [ -f "$ENV_PATH/requirements.txt" ]; then
