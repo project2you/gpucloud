@@ -347,7 +347,7 @@ SERVICE_NAME="gpuspeed_client"
 SERVICE_PATH="/etc/systemd/system/$SERVICE_NAME.service"
 
 # Activate the environment and update pip
-source $ENV_PATH/bin/activate
+source /opt/gpuspeed/env/bin/activate
 pip install --upgrade pip
 
 # Download requirements.txt and install dependencies
@@ -397,7 +397,6 @@ sudo systemctl start $SERVICE_NAME
 echo "Service $SERVICE_NAME has been created and started."
 
 echo "Setup complete. Environment is ready."
-
 
 
 # VPN setup
