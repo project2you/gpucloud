@@ -271,74 +271,40 @@ ENV_PATH="/opt/gpuspeed/env"
 sudo apt install python3.10-venv
 
 # ตรวจสอบและติดตตั้ง Python3 และ venv ถ้ายังไม่ได้ติดตตั้ง
-if ! command -v python3 &> /dev/null; then
-    echo "Python3 is not installed. Installing Python3 and its venv module..."
-    sudo apt update
-    sudo apt install python3 python3-venv -y
-fi
-
-# ลบสภาพแวดล้อมเสมือนเดิมถ้ามีอยยู่
-if [ -d "$ENV_PATH" ]; then
-    echo "Removing existing virtual environment..."
-    sudo rm -rf "$ENV_PATH"
-fi
-
-#!/bin/bash
-
-# Path to the python3.10 executable
-PYTHON310_PATH=$(which python3.10)
-
-# Check if python3.10 is installed
-if [ -z "$PYTHON310_PATH" ]; then
-  echo "python3.10 is not installed. Please install it before running this script."
+# Ensure the script is run as root
+if [ "$(id -u)" -ne 0 ]; then
+  echo "This script must be run as root. Please use 'sudo' to run this script."
   exit 1
 fi
 
-echo "Using python3.10 at $PYTHON310_PATH"
+# Add the deadsnakes PPA which contains newer releases of Python
+add-apt-repository ppa:deadsnakes/ppa -y
 
-# Backup and create symlinks for python and python3
-update_alternative() {
-  local cmd=$1
-  local path="/usr/bin/$cmd"
+# Update the package list
+apt-get update
 
-  # Check if the command already points to the correct Python version
-  if [ "$(readlink -f $path)" = "$PYTHON310_PATH" ]; then
-    echo "$cmd is already set to python3.10"
-  else
-    # Backup the existing version if it's not a symlink to python3.10
-    if [ -e "$path" ] && [ "$(readlink -f $path)" != "$PYTHON310_PATH" ]; then
-      sudo mv $path ${path}_backup
-      echo "Backed up the existing $cmd executable to ${path}_backup"
-    fi
+# Install Python 3.10
+apt-get install python3.10 python3.10-venv python3.10-dev -y
 
-    # Create a new symlink
-    sudo ln -sf $PYTHON310_PATH $path
-    echo "Linked $cmd to python3.10"
-  fi
-}
+# If /usr/bin/python exists, back it up
+if [ -f "/usr/bin/python" ]; then
+  mv /usr/bin/python /usr/bin/python_backup
+fi
 
-# Update python and python3 to point to python3.10
-update_alternative "python"
-update_alternative "python3"
+# Create a symbolic link for python to point to python3.10
+ln -s /usr/bin/python3.10 /usr/bin/python
 
-# Verify the changes
-echo "Verification:"
-echo "python version: $(python --version)"
-echo "python3 version: $(python3 --version)"
+# Confirm the action
+echo "Python 3.10 is now installed and the 'python' command now refers to Python 3.10."
+echo "Running 'python --version' to display the Python version:"
+python --version
+
 
 
 # สร้างสภาพแวดล้อมเสมือนใหม่
 echo "Creating new virtual environment..."
-python3 -m venv $ENV_PATH
+python -m venv $ENV_PATH
 echo "Virtual environment created at $ENV_PATH"
-
-# สร้าง symlink จาก python3 ไปยัง python
-if [ -f "$ENV_PATH/bin/python3" ] && [ ! -f "$ENV_PATH/bin/python" ]; then
-    echo "Creating symlink from python3 to python in the virtual environment..."
-    ln -s python3 $ENV_PATH/bin/python
-fi
-
-echo "Setup complete. Environment is ready."
 
 # Set environment variable paths
 ENV_PATH="/opt/gpuspeed/env"
