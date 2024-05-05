@@ -10,6 +10,41 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 
+# ตั้งค่าชื่อบริการ
+SERVICE_NAME="gpuspeed_client"
+# ตั้งค่าไดเรกทอรีที่ต้องการลบ
+DIRECTORY="/opt/gpuspeed"
+
+# ตรวจสอบว่าสคริปต์ถูกรันด้วยสิทธิ์ root หรือไม่
+if [ "$(id -u)" -ne 0 ]; then
+    echo "สคริปต์นี้ต้องรันด้วยสิทธิ์ root."
+    exit 1
+fi
+
+# หยุดบริการถ้ามันกำลังทำงาน
+if systemctl is-active --quiet "$SERVICE_NAME"; then
+    echo "หยุดบริการ $SERVICE_NAME..."
+    systemctl stop "$SERVICE_NAME"
+    echo "บริการ $SERVICE_NAME ถูกหยุดแล้ว."
+else
+    echo "บริการ $SERVICE_NAME ไม่ได้ทำงาน."
+fi
+
+# ลบไดเรกทอรี
+if [ -d "$DIRECTORY" ]; then
+    echo "กำลังลบไดเรกทอรี $DIRECTORY..."
+    rm -rf "$DIRECTORY"
+    echo "ไดเรกทอรี $DIRECTORY ถูกลบเรียบร้อยแล้ว."
+else
+    echo "ไม่พบไดเรกทอรี $DIRECTORY."
+fi
+
+# รีโหลดและปิดใช้งานบริการเพื่อไม่ให้เริ่มขึ้นอีกในการบูตครั้งต่อไป
+echo "กำลังปิดใช้งานบริการ $SERVICE_NAME..."
+systemctl disable "$SERVICE_NAME"
+systemctl reset-failed "$SERVICE_NAME"
+echo "บริการ $SERVICE_NAME ถูกปิดใช้งานและรีเซ็ตสถานะเรียบร้อยแล้ว."
+
 # Create the directory in /etc
 directory="/etc/gpuspeed"
 service_name="gpuspeed_client"
@@ -343,26 +378,6 @@ echo "Node Exporter Status:"
 sudo docker ps -f name=node_exporter
 
 echo "Installation Completed"
-
-# กำหนดชื่อ image
-IMAGE_NAME="project2you/jupyter-nvidia-gpucloud:1.0"
-
-# ตรวจสอบว่า Docker ติดตั้งบนเครื่องหรือไม่
-if ! command -v docker &> /dev/null; then
-    echo "Docker ไม่ได้ติดตั้งบนเครื่องนี้. กรุณาติดตั้ง Docker ก่อนทำการดำเนินการต่อ."
-    exit 1
-fi
-
-# ดาวน์โหลด Docker image
-echo "กำลังดาวน์โหลด Docker image: $IMAGE_NAME..."
-docker pull $IMAGE_NAME
-
-if [ $? -eq 0 ]; then
-    echo "ดาวน์โหลด image สำเร็จ: $IMAGE_NAME"
-else
-    echo "มีปัญหาในการดาวน์โหลด image: $IMAGE_NAME"
-    exit 1
-fi
 
 
 sudo systemctl daemon-reload
