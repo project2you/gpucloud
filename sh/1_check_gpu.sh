@@ -1,18 +1,5 @@
 #!/bin/bash
 
-# ใช้คำสั่ง lspci เพื่อค้นหารายการของการ์ดจอ NVIDIA
-nvidia_card_info=$(lspci | grep -i nvidia)
-
-if [ -n "$nvidia_card_info" ]; then
-    # ตัดคำเพื่อเหลือแต่ชื่อรุ่นพร้อมตัวเลข
-    # ใช้ awk เพื่อแยกข้อมูล และ sed เพื่อตัดข้อความที่ไม่ต้องการออก
-    nvidia_model=$(echo "$nvidia_card_info" | awk -F ': ' '{print $2}' | sed -r 's/^.*\[//' | sed -r 's/([^0-9]*[0-9]+).*/\1/')
-
-    echo "$nvidia_model"
-else
-    echo "No NVIDIA card detected."
-fi
-
 
 # ตรวจสอบว่า Nouveau driver ถูก disable หรือยัง
 if lsmod | grep -q nouveau; then
@@ -29,6 +16,21 @@ if lsmod | grep -q nouveau; then
     echo "Rebooting the system..."
     sudo reboot
 fi
+
+# ใช้คำสั่ง lspci เพื่อค้นหารายการของการ์ดจอ NVIDIA
+nvidia_card_info=$(lspci | grep -i nvidia)
+
+if [ -n "$nvidia_card_info" ]; then
+    # ตัดคำเพื่อเหลือแต่ชื่อรุ่นพร้อมตัวเลข
+    # ใช้ awk เพื่อแยกข้อมูล และ sed เพื่อตัดข้อความที่ไม่ต้องการออก
+    nvidia_model=$(echo "$nvidia_card_info" | awk -F ': ' '{print $2}' | sed -r 's/^.*\[//' | sed -r 's/([^0-9]*[0-9]+).*/\1/')
+
+    echo "$nvidia_model"
+else
+    echo "No NVIDIA card detected."
+fi
+
+
 
 echo "Detecting NVIDIA GPU..."
 gpu_model=$(lspci | grep -i nvidia | awk -F ': ' '{print $2}' | sed -r 's/([^0-9]*[0-9]+).*/\1/' | head -n 1)
