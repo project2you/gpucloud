@@ -320,6 +320,7 @@ pip install --upgrade pip
 wget -O "$ENV_PATH/requirements.txt" https://raw.githubusercontent.com/project2you/gpuspeed.net/main/client/requirements.txt
 pip install -r "$ENV_PATH/requirements.txt"
 pip install torch torchvision gunicorn Flask APScheduler requests
+pip install speedtest==0.0.1
 echo "Python packages installed."
 
 # Move the .env configuration file
