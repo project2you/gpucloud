@@ -7,7 +7,8 @@ from flask import Flask, request, jsonify
 import requests
 #from requests.adapters import HTTPAdapter
 import socket
-import speedtest
+import speedtest # pip install speedtest-cli
+
 from time import sleep
 
 import docker
@@ -726,6 +727,17 @@ def measure_gpu_speed(device='cuda:0'):
 
     return speed_gbps
 
+def test_internet_speed():
+    try:
+        st = speedtest.Speedtest()
+        st.get_best_server()
+        download_speed = st.download() / 1_000_000  # Convert from bits/s to Mbits/s
+        upload_speed = st.upload() / 1_000_000  # Convert from bits/s to Mbits/s
+
+        return download_speed, upload_speed
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return None, None
 
 #เริ่มต้นในส่วนของการดึงค่า Infomation ของ Client ต่าง ๆ ออกมาแสดง 
 #เพื่อส่งกลับไปที่ Tail.py :5001
@@ -755,9 +767,10 @@ def info():
         uptime()
 
         #Call speed_test
-        network_speed = speed_test()
-        network_info = network_speed.split("|")
-
+        download, upload = test_internet_speed()
+        print(f"Download Speed: {download:.2f} Mbps")
+        print(f"Upload Speed: {upload:.2f} Mbps")
+    
         # แทนที่ 'tailscale0' ด้วยชื่ออินเทอร์เฟสที่คุณต้องการดึงข้อมูล
         interface_name = 'tailscale0'
         ip_address = get_ip_address(interface_name)
@@ -808,8 +821,8 @@ def info():
             "gpu_speed": str(f"{info_gpu_speed:.2f}") +' GB/s',
             "gpu_tflops" : info_gpu_flops,
             "region": str(get_location()),
-            "network_up": str(network_info[0]),
-            "network_down": str(network_info[1]),
+            "network_up": str(upload:.2f),
+            "network_down": str(download:.2f),
             "online_duration": str(info_uptime_days) ,
             "ip": str(ip_address),
             'id_user':'user_0001',
