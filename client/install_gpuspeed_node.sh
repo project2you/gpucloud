@@ -281,10 +281,16 @@ fi
 add-apt-repository ppa:deadsnakes/ppa -y
 
 # Update the package list
-apt-get update
+sudo apt-get update
+
+#install Cuda
+sudo apt install nvidia-cuda-toolkit -y
+sudo apt install build-essential -y
+
 
 # Install Python 3.10 and the Python 3.10 development and venv packages
-apt-get install python3.10 python3.10-venv python3.10-dev -y
+sudo apt-get install python3.10 python3.10-venv python3.10-dev -y
+
 
 # Check if pip is installed for Python 3.10 and install it if it's not present
 if ! command -v pip3.10 &> /dev/null; then
@@ -303,7 +309,6 @@ python --version
 pip --version
 
 
-
 # สร้างสภาพแวดล้อมเสมือนใหม่
 # Define the environment variable paths
 ENV_PATH="/opt/gpuspeed/env"
@@ -317,7 +322,9 @@ python -m venv $ENV_PATH
 echo "Virtual environment created at $ENV_PATH"
 
 # Activate the environment
-source $ENV_PATH/bin/activate
+source /opt/gpuspeed/env/bin/activate
+pip install pycuda
+
 
 # Update pip to the latest version
 echo "Updating pip..."
@@ -327,7 +334,6 @@ pip install --upgrade pip
 echo "Downloading and installing dependencies..."
 wget -O "$ENV_PATH/requirements.txt" https://raw.githubusercontent.com/project2you/gpuspeed.net/main/client/requirements.txt
 
-source /opt/gpuspeed/env/bin/activate
 pip install -r "$ENV_PATH/requirements.txt"
 
 # Install additional packages
