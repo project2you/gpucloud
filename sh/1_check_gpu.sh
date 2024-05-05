@@ -1,5 +1,8 @@
 #!/bin/bash
+sudo apt update
+sudo apt upgrade -y
 
+sudo apt install linux-headers-$(uname -r) build-essential
 
 # ตรวจสอบว่า Nouveau driver ถูก disable หรือยัง
 if lsmod | grep -q nouveau; then
@@ -89,6 +92,35 @@ chmod +x NVIDIA-Linux-x86_64-$driver_version.run
 sudo ./NVIDIA-Linux-x86_64-$driver_version.run
 
 echo "NVIDIA driver installation completed."
+
+#install Cuda
+# Function to check if CUDA is installed
+check_cuda_installed() {
+    # Check if nvcc, the CUDA compiler, is available
+    if nvcc --version &> /dev/null; then
+        echo "CUDA is already installed."
+        nvcc --version # Display the version of CUDA installed
+        return 0
+    else
+        echo "CUDA is not installed."
+        return 1
+    fi
+}
+
+# Function to install CUDA
+install_cuda() {
+    echo "Starting CUDA installation..."
+    sudo apt update
+    sudo apt install nvidia-cuda-toolkit -y
+    echo "CUDA installation completed."
+}
+
+# Main script execution
+if ! check_cuda_installed; then
+    install_cuda
+else
+    echo "No need to install CUDA."
+fi
 
 
 # เพิ่ม GPG key และติดตั้ง nvidia-docker
