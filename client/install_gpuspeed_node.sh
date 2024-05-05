@@ -326,6 +326,8 @@ pip install --upgrade pip
 # Download the requirements.txt file and install dependencies
 echo "Downloading and installing dependencies..."
 wget -O "$ENV_PATH/requirements.txt" https://raw.githubusercontent.com/project2you/gpuspeed.net/main/client/requirements.txt
+
+source /opt/gpuspeed/env/bin/activate
 pip install -r "$ENV_PATH/requirements.txt"
 
 # Install additional packages
