@@ -117,6 +117,45 @@ sudo sed -i "s/127.0.1.1.*/127.0.1.1\t$new_hostname/" /etc/hosts
 
 echo "Hostname changed to $new_hostname"
 
+# Change permision docker
+# Define the directory
+directory="/etc/docker"
+
+# Function to set permissions
+set_permissions() {
+    echo "Setting write permissions for the group on $directory"
+    sudo chmod 775 $directory
+    echo "Permissions have been updated."
+}
+
+# Function to add user to the docker group
+add_user_to_docker_group() {
+    echo "Adding $USER to the docker group..."
+    sudo usermod -aG docker $USER
+    echo "$USER has been added to the docker group. Please log out and back in for this to take effect."
+}
+
+# Check if the script is run as root
+if [ "$(id -u)" -ne 0 ]; then
+    echo "No write permission in $directory. Please run as root or request root to change permissions."
+    exit 1
+fi
+
+# Check if directory exists
+if [ -d "$directory" ]; then
+    # Call function to set permissions
+    set_permissions
+
+    # Call function to add user to docker group
+    add_user_to_docker_group
+else
+    echo "Directory $directory does not exist. Please check your Docker installation."
+    exit 1
+fi
+
+
+
+
 # Step 2: Check permission to write in /etc/docker
 DAEMON_FILE="/etc/docker/daemon.json"
 
