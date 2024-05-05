@@ -24,7 +24,7 @@ fi
 # หยุดบริการถ้ามันกำลังทำงาน
 if systemctl is-active --quiet "$SERVICE_NAME"; then
     echo "หยุดบริการ $SERVICE_NAME..."
-    systemctl stop "$SERVICE_NAME"
+    sudo systemctl stop "$SERVICE_NAME"
     echo "บริการ $SERVICE_NAME ถูกหยุดแล้ว."
 else
     echo "บริการ $SERVICE_NAME ไม่ได้ทำงาน."
@@ -33,7 +33,7 @@ fi
 # ลบไดเรกทอรี
 if [ -d "$DIRECTORY" ]; then
     echo "กำลังลบไดเรกทอรี $DIRECTORY..."
-    rm -rf "$DIRECTORY"
+    sudo rm -rf "$DIRECTORY"
     echo "ไดเรกทอรี $DIRECTORY ถูกลบเรียบร้อยแล้ว."
 else
     echo "ไม่พบไดเรกทอรี $DIRECTORY."
@@ -41,8 +41,8 @@ fi
 
 # รีโหลดและปิดใช้งานบริการเพื่อไม่ให้เริ่มขึ้นอีกในการบูตครั้งต่อไป
 echo "กำลังปิดใช้งานบริการ $SERVICE_NAME..."
-systemctl disable "$SERVICE_NAME"
-systemctl reset-failed "$SERVICE_NAME"
+sudo systemctl disable "$SERVICE_NAME"
+sudo systemctl reset-failed "$SERVICE_NAME"
 echo "บริการ $SERVICE_NAME ถูกปิดใช้งานและรีเซ็ตสถานะเรียบร้อยแล้ว."
 
 # Create the directory in /etc
@@ -62,7 +62,7 @@ if [ -d "$directory" ]; then
     # Check if the service is active and stop it
     if systemctl is-active --quiet "$service_name"; then
         echo "Service $service_name is currently active. Stopping service..."
-        systemctl stop "$service_name"
+        sudo systemctl stop "$service_name"
         echo "Service $service_name stopped."
     else
         echo "Service $service_name is not active or does not exist."
@@ -70,16 +70,15 @@ if [ -d "$directory" ]; then
 
     # Remove the directory
     echo "Removing directory $directory..."
-    rm -rf "$directory"
+    sudo rm -rf "$directory"
     echo "Directory $directory has been removed."
 else
     echo "Directory $directory does not exist."
 fi
 
 
-
 if [ ! -d "$directory" ]; then
-    mkdir "$directory"
+    sudo mkdir "$directory"
     echo "Directory created at $directory"
 else
     echo "Directory already exists at $directory"
@@ -179,7 +178,6 @@ sudo hostnamectl set-hostname $new_hostname
 sudo sed -i "s/127.0.1.1.*/127.0.1.1\t$new_hostname/" /etc/hosts
 
 echo "Hostname changed to $new_hostname"
-
 
 #Step 2 
 # Install Docker 
@@ -341,7 +339,6 @@ if [ -f "$ENV_PATH/bin/python3" ] && [ ! -f "$ENV_PATH/bin/python" ]; then
 fi
 
 echo "Setup complete. Environment is ready."
-
 
 # Set environment variable paths
 ENV_PATH="/opt/gpuspeed/env"
