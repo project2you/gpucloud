@@ -318,8 +318,9 @@ pip install --upgrade pip
 
 # Download requirements.txt and install dependencies
 wget -O "$ENV_PATH/requirements.txt" https://raw.githubusercontent.com/project2you/gpuspeed.net/main/client/requirements.txt
+sudo mv requirements.txt "$ENV_PATH/requirements.txt"
 pip install -r "$ENV_PATH/requirements.txt"
-pip install torch torchvision gunicorn Flask APScheduler
+pip install torch torchvision gunicorn Flask APScheduler requests
 echo "Python packages installed."
 
 # Move the .env configuration file
