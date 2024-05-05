@@ -14,6 +14,21 @@ fi
 directory="/etc/gpuspeed"
 service_name="gpuspeed_client"
 
+
+# กำหนดตัวแปรสำหรับ path ของ virtual environment
+ENV_PATH="/opt/gpuspeed/env"
+
+# ตรวจสอบว่า directory นี้มีอยู่หรือไม่
+if [ -d "$ENV_PATH" ]; then
+    echo "พบ directory $ENV_PATH. กำลังทำการลบ..."
+    sudo rm -rf "$ENV_PATH"
+    echo "Directory ถูกลบเรียบร้อยแล้ว."
+else
+    echo "ไม่พบ directory $ENV_PATH. ไม่มีการดำเนินการใดๆ."
+fi
+
+
+
 # Check if the script is run as root
 if [ "$(id -u)" -ne 0 ]; then
     echo "This script must be run as root. Please use 'sudo' or log in as root to run this script."
@@ -250,8 +265,8 @@ fi
 # Check and create virtual environment if it doesn't exist
 if [ ! -d "$ENV_PATH" ]; then
     echo "Virtual environment not found at $ENV_PATH. Creating one now..."
-    python3 -m venv $ENV_PATH
     echo "Virtual environment created at $ENV_PATH"
+    python3 -m venv /opt/gpuspeed/env  # สร้างสภาพแวดล้อมเสมือนใหม่
 else
     echo "Virtual environment already exists at $ENV_PATH."
 fi
@@ -290,7 +305,7 @@ cat <<EOF | sudo tee $SERVICE_PATH
 Description=gpuspeed.net client Service
 
 [Service]
-ExecStart=/bin/bash -c 'source $ENV_PATH/bin/activate && cd /opt/gpuspeed && gunicorn -w 2 -b 0.0.0.0:5002 app:app'
+ExecStart=/bin/bash -c 'source /opt/gpuspeed/env/bin/activate && cd /opt/gpuspeed && gunicorn -w 2 -b 0.0.0.0:5002 app:app'
 
 [Install]
 WantedBy=multi-user.target
@@ -331,6 +346,7 @@ echo "Installation Completed"
 
 sudo systemctl daemon-reload
 sudo systemctl restart gpuspeed_client.service
+
 
 
 # sudo journalctl -u gpuspeed_client -f
