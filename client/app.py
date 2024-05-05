@@ -1021,6 +1021,7 @@ def random_time():
 def schedule_daily_task():
     """Schedule the check_uptime function to run at a random time daily."""
     random_generated_time = random_time()
+    print("APScheduler is working!")
     print(f"Scheduled task at {random_generated_time} daily.")
     # Clear existing job to prevent multiple triggers
     scheduler.remove_job('daily_check', jobstore=None)
