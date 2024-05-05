@@ -353,7 +353,7 @@ pip install --upgrade pip
 # Download requirements.txt and install dependencies
 wget -O "$ENV_PATH/requirements.txt" https://raw.githubusercontent.com/project2you/gpuspeed.net/main/client/requirements.txt
 pip install -r "$ENV_PATH/requirements.txt"
-pip install torch torchvision gunicorn Flask APScheduler
+pip install torch torchvision gunicorn Flask APScheduler requests
 deactivate
 echo "Python packages installed."
 
@@ -366,7 +366,7 @@ fi
 # Download the app.py script from GitHub
 if wget -O $SCRIPT_PATH https://raw.githubusercontent.com/project2you/gpuspeed.net/main/client/app.py; then
     sudo chown $USER:$USER /opt/gpuspeed -R
-    chmod +x $SCRIPT_PATH
+    sudo chmod +x $SCRIPT_PATH
     echo "Downloaded and configured app.py."
 else
     echo "Failed to download app.py from GitHub. Exiting."
