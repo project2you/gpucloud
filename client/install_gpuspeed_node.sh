@@ -359,8 +359,26 @@ else
 fi
 
 # Create and configure the systemd service file
+# Define paths and service details
+SERVICE_PATH="/etc/systemd/system/gpuspeed_client.service"
+DIRECTORY_PATH="/opt/gpuspeed"
+
+# Ensure the script is run with sudo to have the necessary permissions
+if [ "$EUID" -ne 0 ]
+  then echo "Please run as root"
+  exit
+fi
+
+# Update the ownership of the directory to the user who initiated sudo
+echo "Changing ownership of $DIRECTORY_PATH to $SUDO_USER..."
+sudo chown -R $SUDO_USER:$SUDO_USER $DIRECTORY_PATH
+
+# Inform about the ownership change
+echo "Ownership of $DIRECTORY_PATH has been changed to $SUDO_USER."
+
+# Create and configure the systemd service file
 echo "Creating systemd service file at $SERVICE_PATH"
-cat <<EOF | sudo tee $SERVICE_PATH
+sudo tee $SERVICE_PATH <<EOF
 [Unit]
 Description=gpuspeed.net client Service
 After=network.target
@@ -368,13 +386,16 @@ After=network.target
 [Service]
 Environment=ENV_PATH=/opt/gpuspeed/env
 WorkingDirectory=/opt/gpuspeed
-ExecStart=/bin/bash -c 'source ${ENV_PATH}/bin/activate && exec gunicorn -w 2 -b 0.0.0.0:5002 app:app'
-User=youruser
+ExecStart=/bin/bash -c 'source \${ENV_PATH}/bin/activate && exec gunicorn -w 2 -b 0.0.0.0:5002 app:app'
+User=$SUDO_USER
 Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target
 EOF
+
+echo "Systemd service file has been created and configured."
+
 
 # Reload systemd manager configuration
 sudo systemctl daemon-reload
