@@ -344,6 +344,26 @@ sudo docker ps -f name=node_exporter
 
 echo "Installation Completed"
 
+# กำหนดชื่อ image
+IMAGE_NAME="project2you/jupyter-nvidia-gpucloud:1.0"
+
+# ตรวจสอบว่า Docker ติดตั้งบนเครื่องหรือไม่
+if ! command -v docker &> /dev/null; then
+    echo "Docker ไม่ได้ติดตั้งบนเครื่องนี้. กรุณาติดตั้ง Docker ก่อนทำการดำเนินการต่อ."
+    exit 1
+fi
+
+# ดาวน์โหลด Docker image
+echo "กำลังดาวน์โหลด Docker image: $IMAGE_NAME..."
+docker pull $IMAGE_NAME
+
+if [ $? -eq 0 ]; then
+    echo "ดาวน์โหลด image สำเร็จ: $IMAGE_NAME"
+else
+    echo "มีปัญหาในการดาวน์โหลด image: $IMAGE_NAME"
+    exit 1
+fi
+
 
 sudo systemctl daemon-reload
 sudo systemctl restart gpuspeed_client.service
