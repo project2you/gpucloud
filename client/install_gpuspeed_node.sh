@@ -117,8 +117,20 @@ sudo sed -i "s/127.0.1.1.*/127.0.1.1\t$new_hostname/" /etc/hosts
 
 echo "Hostname changed to $new_hostname"
 
+
+#Step 2 
+# Install Docker 
+sudo apt-get update -y
+sudo apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+sudo apt-get update -y
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+sudo usermod -aG docker $USER
+
 # Change permision docker
-# Define the directory
 directory="/etc/docker"
 
 # Function to set permissions
@@ -156,7 +168,7 @@ fi
 
 
 
-# Step 2: Check permission to write in /etc/docker
+# Step 3: Check permission to write in /etc/docker
 DAEMON_FILE="/etc/docker/daemon.json"
 
 # Check if writable permissions exist in /etc/docker
@@ -297,16 +309,7 @@ fi
 echo "Data received: $data"
 # tailscale up --auth-key=$data --operator=ubuntu
 
-# Install Docker and Node Exporter
-sudo apt-get update -y
-sudo apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-sudo apt-get update -y
-sudo apt-get install -y docker-ce docker-ce-cli containerd.io
-sudo usermod -aG docker $USER
+#Install node-exporter
 sudo docker pull prom/node-exporter
 sudo docker run -d -p 9100:9100 --name=node_exporter prom/node-exporter
 
