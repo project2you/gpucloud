@@ -193,9 +193,6 @@ else
     exit 1
 fi
 
-
-
-
 # Step 3: Check permission to write in /etc/docker
 DAEMON_FILE="/etc/docker/daemon.json"
 
@@ -231,104 +228,62 @@ sudo systemctl restart docker
 echo "Docker service restarted."
 
 
-# Step 3: Set up script and service name
-# Ensure the directory exists
+# Set environment variable paths
+ENV_PATH="/opt/gpuspeed/env"
+SCRIPT_PATH="/opt/gpuspeed/app.py"
+SERVICE_NAME="gpuspeed_client"
+SERVICE_PATH="/etc/systemd/system/$SERVICE_NAME.service"
+
+# Ensure the base directory exists
 if [ ! -d "/opt/gpuspeed" ]; then
-    sudo mkdir -p /opt/gpuspeed
+    sudo mkdir -p "/opt/gpuspeed"
+    echo "Base directory /opt/gpuspeed created."
+fi
+
+# Check and install Python3 and pip if not already installed
+if ! command -v python3 &> /dev/null; then
+    echo "Python3 is not installed. Installing Python3..."
+    sudo apt-get update
+    sudo apt-get install python3 python3-pip python3-venv -y
 fi
 
 # Check and create virtual environment if it doesn't exist
 if [ ! -d "$ENV_PATH" ]; then
-    echo "Virtual environment not found. Creating one now..."
+    echo "Virtual environment not found at $ENV_PATH. Creating one now..."
     python3 -m venv $ENV_PATH
     echo "Virtual environment created at $ENV_PATH"
 else
-    echo "Virtual environment already exists."
+    echo "Virtual environment already exists at $ENV_PATH."
 fi
 
-# Activate the environment and install dependencies
+# Activate the environment and update pip
 source $ENV_PATH/bin/activate
 pip install --upgrade pip
 
-# Assuming you have a requirements.txt available locally or need to download one
-pip install -r /path/to/requirements.txt
-
-# Exit from virtual environment
+# Download requirements.txt and install dependencies
+wget -O "$ENV_PATH/requirements.txt" https://raw.githubusercontent.com/project2you/gpuspeed.net/main/client/requirements.txt
+pip install -r "$ENV_PATH/requirements.txt"
+pip install torch torchvision gunicorn Flask APScheduler
 deactivate
+echo "Python packages installed."
 
-echo "Setup complete. Environment is ready."
-
-
-
-
-
-
-
-SCRIPT_PATH="/opt/gpuspeed/app.py"
-SERVICE_NAME="gpuspeed_client"
-SERVICE_PATH="/etc/systemd/system/$SERVICE_NAME.service"
-ENV_PATH="/opt/gpuspeed"
-
-sudo mv .env "/opt/gpuspeed"
+# Move the .env configuration file
+if [ -f ".env" ]; then
+    sudo mv .env "/opt/gpuspeed/.env"
+    echo ".env file moved to /opt/gpuspeed"
+fi
 
 # Download the app.py script from GitHub
-echo "Downloading app.py from GitHub..."
-curl -L https://raw.githubusercontent.com/project2you/gpuspeed.net/main/client/app.py -o $SCRIPT_PATH
-
-sudo chown $USER:$USER /opt/gpuspeed -R
-chmod +x $SCRIPT_PATH
-
-# Check if the script was successfully downloaded
-if [ ! -f "$SCRIPT_PATH" ]; then
+if wget -O $SCRIPT_PATH https://raw.githubusercontent.com/project2you/gpuspeed.net/main/client/app.py; then
+    sudo chown $USER:$USER /opt/gpuspeed -R
+    chmod +x $SCRIPT_PATH
+    echo "Downloaded and configured app.py."
+else
     echo "Failed to download app.py from GitHub. Exiting."
     exit 1
 fi
 
-# Check and install Python3 and venv if not already installed
-if ! command -v python3 &> /dev/null
-then
-    echo "Python3 is not installed. Installing Python3..."
-    sudo apt-get update
-    sudo apt-get install python3
-fi
-
-if ! command -v pip &> /dev/null
-then
-    echo "pip is not installed. Installing pip..."
-    sudo apt-get install python3-pip
-fi
-
-# Create virtual environment
-if [ ! -d "$ENV_PATH" ]; then
-    echo "Creating virtual environment at $ENV_PATH"
-    python3 -m venv $ENV_PATH
-fi
-
-wget https://raw.githubusercontent.com/project2you/gpuspeed.net/main/client/requirements.txt
-echo "Installing Python packages..."
-mv requirements.txt $ENV_PATH
-
-
-# Activate environment and install dependencies
-source $ENV_PATH/bin/activate
-pip install -r $ENV_PATH/requirements.txt
-
-# Install PyTorch and torchvision
-pip install torch torchvision
-
-# Check if gunicorn is installed
-if ! command -v gunicorn &> /dev/null
-then
-    echo "Gunicorn is not installed. Installing Gunicorn..."
-    pip install gunicorn
-fi
-
-sudo pip install Flask
-sudo pip install APScheduler
-
-deactivate
-
-# Create systemd service file
+# Create and configure the systemd service file
 echo "Creating systemd service file at $SERVICE_PATH"
 cat <<EOF | sudo tee $SERVICE_PATH
 [Unit]
@@ -347,8 +302,9 @@ sudo systemctl daemon-reload
 # Enable and start the service
 sudo systemctl enable $SERVICE_NAME
 sudo systemctl start $SERVICE_NAME
-
 echo "Service $SERVICE_NAME has been created and started."
+
+echo "Setup complete. Environment is ready."
 
 # VPN setup
 URL="https://tailscale.gpuspeed.net/genkey"
