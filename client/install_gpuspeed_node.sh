@@ -431,6 +431,6 @@ sudo systemctl daemon-reload
 sudo systemctl restart gpuspeed_client.service
 
 
-udo journalctl -u gpuspeed_client -f
+sudo journalctl -u gpuspeed_client -f
 # sudo systemctl restart gpuspeed_client
 # sudo systemctl stop gpuspeed_client
