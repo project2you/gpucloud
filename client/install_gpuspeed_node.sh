@@ -257,9 +257,6 @@ EOF
     echo "File $DAEMON_FILE created successfully."
 fi
 
-sudo usermod -aG docker $USER
-newgrp docker
-
 # Restart Docker service
 echo "Restarting Docker service..."
 sudo systemctl restart docker
