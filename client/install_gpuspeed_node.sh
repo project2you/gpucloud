@@ -260,6 +260,8 @@ echo "Restarting Docker service..."
 sudo systemctl restart docker
 echo "Docker service restarted."
 
+sudo usermod -aG docker $USER
+
 # pull images
 echo "Pulling Docker iamges..."
 docker pull project2you/jupyter-nvidia-gpucloud:1.0
@@ -341,14 +343,9 @@ wget -O "$ENV_PATH/requirements.txt" https://raw.githubusercontent.com/project2y
 pip install -r "$ENV_PATH/requirements.txt"
 
 # Install additional packages
-pip install torch torchvision gunicorn Flask APScheduler requests
-
-# Install a specific version of speedtest
-pip install speedtest==0.0.1
+pip install torch torchvision gunicorn Flask APScheduler
 
 echo "Python packages installed successfully."
-
-
 
 # Move the .env configuration file
 if [ -f ".env" ]; then
