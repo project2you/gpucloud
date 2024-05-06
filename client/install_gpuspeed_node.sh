@@ -345,7 +345,7 @@ wget -O "$ENV_PATH/requirements.txt" https://raw.githubusercontent.com/project2y
 pip install -r "$ENV_PATH/requirements.txt"
 
 # Install additional packages
-pip install torch torchvision gunicorn Flask APScheduler requests docker
+pip install torch torchvision gunicorn Flask APScheduler requests docker speedtest-cli
 
 echo "Python packages installed successfully."
 
