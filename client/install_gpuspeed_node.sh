@@ -246,6 +246,7 @@ echo "Docker service restarted."
 
 sudo usermod -aG docker $USER
 newgrp docker
+exit
 
 # pull images
 echo "Pulling Docker iamges..."
