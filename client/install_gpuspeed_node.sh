@@ -422,16 +422,17 @@ sudo docker ps -f name=node_exporter
 
 echo "Installation Completed"
 
+sudo systemctl daemon-reload  # Reload systemd manager configuration
+sudo systemctl restart docker  # Restart Docker service
 
-sudo systemctl daemon-reload
 sudo systemctl restart gpuspeed_client.service
 
 sudo usermod -aG docker $USER
 sudo chown root:docker /var/run/docker.sock
 sudo chmod 660 /var/run/docker.sock
 
-
 sudo systemctl restart gpuspeed_client
+
 sudo journalctl -u gpuspeed_client -f
 # 
 # sudo systemctl stop gpuspeed_client
