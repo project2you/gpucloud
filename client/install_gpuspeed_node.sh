@@ -261,7 +261,6 @@ sudo systemctl restart docker
 echo "Docker service restarted."
 
 sudo usermod -aG docker $USER
-newgrp docker
 
 # pull images
 echo "Pulling Docker iamges..."
