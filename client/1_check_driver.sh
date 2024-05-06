@@ -39,8 +39,8 @@ if lsmod | grep -q nouveau; then
     sudo update-initramfs -u
 
     # รีสตาร์ทเครื่อง
-    #echo "Rebooting the system..."
-    #sudo reboot
+    echo "Rebooting the system..."
+    sudo reboot
 fi
 
 # ใช้คำสั่ง lspci เพื่อค้นหารายการของการ์ดจอ NVIDIA
@@ -56,8 +56,6 @@ else
     echo "No NVIDIA card detected."
 fi
 
-
-
 echo "Detecting NVIDIA GPU..."
 gpu_model=$(lspci | grep -i nvidia | awk -F ': ' '{print $2}' | sed -r 's/([^0-9]*[0-9]+).*/\1/' | head -n 1)
 
@@ -66,55 +64,39 @@ if [[ -z "$gpu_model" ]]; then
     exit 1
 fi
 
-echo "Detected GPU model: $gpu_model"
+#install Driver for example : 2060
+# Define the URL of the NVIDIA driver
+# 2060 
+NVIDIA_DRIVER_URL="https://us.download.nvidia.com/XFree86/Linux-x86_64/550.78/NVIDIA-Linux-x86_64-550.78.run"
 
-# กำหนดเวอร์ชันของ driver ที่ต้องการติดตั้ง
-driver_version=""
+# Define the path where the driver will be downloaded
+DOWNLOAD_PATH="/tmp/NVIDIA-Linux-x86_64-550.78.run"
 
-# ตัวอย่างเช็ครุ่น GPU และกำหนดเวอร์ชัน driver ที่เหมาะสม
-case $gpu_model in
-    *"3060"*)
-        driver_version="460.32.03"
-        ;;
-    *"3080"*)
-        driver_version="460.56"
-        ;;
-    *"3090"*)
-        driver_version="460.67"
-        ;;
-    *"4060"*)
-        driver_version="470.42.01" # เปลี่ยนเป็นเวอร์ชันจริงสำหรับ 4060
-        ;;
-    *"4070"*)
-        driver_version="470.57.02" # เปลี่ยนเป็นเวอร์ชันจริงสำหรับ 4070
-        ;;
-    *"4080"*)
-        driver_version="470.74" # เปลี่ยนเป็นเวอร์ชันจริงสำหรับ 4080
-        ;;
-    *"4090"*)
-        driver_version="495.29.05" # เปลี่ยนเป็นเวอร์ชันจริงสำหรับ 4090
-        ;;
-    *)
-        echo "No suitable driver version found for GPU model: $gpu_model"
-        exit 1
-        ;;
-esac
+# Download the driver using wget (install wget if it's not installed)
+if ! command -v wget &> /dev/null
+then
+    echo "wget could not be found, installing..."
+    sudo apt-get install wget -y
+fi
 
-echo "Downloading and installing NVIDIA driver version: $driver_version..."
+echo "Downloading NVIDIA driver..."
+wget -O "$DOWNLOAD_PATH" "$NVIDIA_DRIVER_URL"
 
-# สร้าง URL สำหรับดาวน์โหลด driver
-driver_url="http://us.download.nvidia.com/XFree86/Linux-x86_64/$driver_version/NVIDIA-Linux-x86_64-$driver_version.run"
+# Change the permission to make it executable
+chmod +x "$DOWNLOAD_PATH"
 
-# ดาวน์โหลด NVIDIA driver
-wget $driver_url
+# Stop the display manager to prevent it from interfering with the driver installation
+sudo systemctl stop lightdm.service  # This may vary depending on your display manager (e.g., gdm3, sddm)
 
-# ทำให้ไฟล์เป็น executable
-chmod +x NVIDIA-Linux-x86_64-$driver_version.run
+# Run the NVIDIA driver installer
+echo "Running the NVIDIA driver installer..."
+sudo "$DOWNLOAD_PATH" --dkms -s
 
-# ติดตั้ง NVIDIA driver
-sudo ./NVIDIA-Linux-x86_64-$driver_version.run
+# Restart the display manager
+sudo systemctl start lightdm.service  # Adjust accordingly if using a different display manager
 
 echo "NVIDIA driver installation completed."
+
 
 #install Cuda
 # Function to check if CUDA is installed
@@ -224,38 +206,4 @@ sudo systemctl restart docker
 echo "Docker is now configured to use NVIDIA GPU."
 
 
-# Define the URL of the NVIDIA driver
-# 2060 
-NVIDIA_DRIVER_URL="https://us.download.nvidia.com/XFree86/Linux-x86_64/550.78/NVIDIA-Linux-x86_64-550.78.run"
 
-# Define the path where the driver will be downloaded
-DOWNLOAD_PATH="/tmp/NVIDIA-Linux-x86_64-550.78.run"
-
-# Download the driver using wget (install wget if it's not installed)
-if ! command -v wget &> /dev/null
-then
-    echo "wget could not be found, installing..."
-    sudo apt-get install wget -y
-fi
-
-echo "Downloading NVIDIA driver..."
-wget -O "$DOWNLOAD_PATH" "$NVIDIA_DRIVER_URL"
-
-# Change the permission to make it executable
-chmod +x "$DOWNLOAD_PATH"
-
-# Stop the display manager to prevent it from interfering with the driver installation
-sudo systemctl stop lightdm.service  # This may vary depending on your display manager (e.g., gdm3, sddm)
-
-# Run the NVIDIA driver installer
-echo "Running the NVIDIA driver installer..."
-sudo "$DOWNLOAD_PATH" --dkms -s
-
-# Restart the display manager
-sudo systemctl start lightdm.service  # Adjust accordingly if using a different display manager
-
-echo "NVIDIA driver installation completed."
-
-# รีสตาร์ทเครื่อง
-echo "Rebooting the system..."
-sudo reboot
