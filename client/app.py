@@ -54,7 +54,6 @@ from colorama import Fore, init
 
 import psutil
 import platform
-from datetime import datetime
 
 
 import urllib.request
