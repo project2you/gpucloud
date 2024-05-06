@@ -310,21 +310,19 @@ echo "Virtual environment created at $ENV_PATH"
 
 # Activate the environment
 source /opt/gpuspeed/env/bin/activate
-pip install pycuda
-
 
 # Update pip to the latest version
 echo "Updating pip..."
-pip install --upgrade pip
+pip install --no-cache-dir  --upgrade pip
 
 # Download the requirements.txt file and install dependencies
 echo "Downloading and installing dependencies..."
 wget -O "$ENV_PATH/requirements.txt" https://raw.githubusercontent.com/project2you/gpuspeed.net/main/client/requirements.txt
 
-pip install -r "$ENV_PATH/requirements.txt"
+pip install --no-cache-dir -r"$ENV_PATH/requirements.txt"
 
 # Install additional packages
-pip install torch torchvision gunicorn Flask APScheduler requests docker speedtest-cli
+pip install --no-cache-dir pycuda torch torchvision gunicorn Flask APScheduler requests docker speedtest-cli
 
 echo "Python packages installed successfully."
 
