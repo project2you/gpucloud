@@ -427,7 +427,9 @@ sudo systemctl restart docker  # Restart Docker service
 
 sudo systemctl restart gpuspeed_client.service
 
-sudo usermod -aG docker $USER
+sudo gpasswd -a $USER docker
+newgrp docker
+
 sudo chown root:docker /var/run/docker.sock
 sudo chmod 660 /var/run/docker.sock
 
