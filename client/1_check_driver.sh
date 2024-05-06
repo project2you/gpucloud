@@ -2,7 +2,7 @@
 sudo apt update
 sudo apt upgrade -y
 
-sudo apt install linux-headers-$(uname -r) build-essential
+sudo apt install build-essential
 
 # ตรวจสอบว่า Nouveau driver ถูก disable หรือยัง
 if lsmod | grep -q nouveau; then
