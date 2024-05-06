@@ -39,8 +39,8 @@ if lsmod | grep -q nouveau; then
     sudo update-initramfs -u
 
     # รีสตาร์ทเครื่อง
-    echo "Rebooting the system..."
-    sudo reboot
+    #echo "Rebooting the system..."
+    #sudo reboot
 fi
 
 # ใช้คำสั่ง lspci เพื่อค้นหารายการของการ์ดจอ NVIDIA
@@ -256,3 +256,6 @@ sudo systemctl start lightdm.service  # Adjust accordingly if using a different 
 
 echo "NVIDIA driver installation completed."
 
+# รีสตาร์ทเครื่อง
+echo "Rebooting the system..."
+sudo reboot
