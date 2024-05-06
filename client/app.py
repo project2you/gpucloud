@@ -1007,48 +1007,40 @@ curl -X POST http://192.168.1.45:5001/uptime \
      
 '''
 
+
+scheduler = BackgroundScheduler()
+
+def get_ip_address(interface_name):
+    # Dummy return for demonstration
+    return "192.168.1.1"  # This should be replaced by actual method to retrieve IP
+
 def check_uptime():
+    print("Check uptime")
+    
     global info_uptime_days
-    
-    # ตรวจสอบเวลาออนไลน์
-    print("Check_uptime")
-    
-    uptime()
-    print(info_uptime_days)
-    
-    # แทนที่ 'tailscale0' ด้วยชื่ออินเทอร์เฟสที่คุณต้องการดึงข้อมูล
+    info_uptime_days = "Extracted from some uptime checking logic"  # Example value
+
     interface_name = 'tailscale0'
     ip_address = get_ip_address(interface_name)
-
     url = "https://tailscale.gpuspeed.net/uptime"
     headers = {
         "Content-Type": "application/json",
-        "Auth-Key": AUTH_KEY
+        "Auth-Key": "Your_Auth_Key"  # Replace with your actual AUTH_KEY
     }
     data = {
         "online_duration": info_uptime_days,
         "ip": ip_address
     }
-
     response = requests.post(url, json=data, headers=headers)
     print(response.text)
     return response.text
 
-scheduler = BackgroundScheduler()
-
 def random_time():
-    """Generate a random future date and time, ensuring it's not in the past."""
     current_time = datetime.datetime.now()
-    future_time = current_time + datetime.timedelta(minutes=random.randint(1, 1440))  # Adding up to 24 hours
-
-    # If generated time is still today but in the past, adjust it to a future time
-    if future_time.date() == current_time.date() and future_time.time() <= current_time.time():
-        future_time = current_time + datetime.timedelta(minutes=random.randint(1, 1440))
-
+    future_time = current_time + datetime.timedelta(minutes=random.randint(1, 1440))
     return future_time.strftime('%Y-%m-%d %H:%M')
 
 def uptime():
-    """Function to perform tasks and reschedule itself for the next random time."""
     print(f"Uptime function running at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}")
     next_time = random_time()
     next_datetime = datetime.datetime.strptime(next_time, '%Y-%m-%d %H:%M')
@@ -1057,7 +1049,6 @@ def uptime():
     check_uptime()
 
 def schedule_first_task():
-    """Schedules the uptime task for the first time using the adjusted random_time function."""
     first_time = random_time()
     first_datetime = datetime.datetime.strptime(first_time, '%Y-%m-%d %H:%M')
     scheduler.add_job(uptime, 'date', run_date=first_datetime, id='uptime_task')
@@ -1067,6 +1058,6 @@ if __name__ == '__main__':
     scheduler.start()
     schedule_first_task()
     try:
-        app.run(host='0.0.0.0', debug=True , port=5002 , use_reloader=False )
+        app.run(host='0.0.0.0', port=5002, use_reloader=False)
     except (KeyboardInterrupt, SystemExit):
         scheduler.shutdown()
