@@ -181,59 +181,43 @@ echo "Hostname changed to $new_hostname"
 
 #Step 2 
 # Install Docker 
-sudo apt-get update -y
-sudo apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
 
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-sudo apt-get update -y
-sudo apt-get install -y docker-ce docker-ce-cli containerd.io
-sudo usermod -aG docker $USER
-
-# Change permision docker
-directory="/etc/docker"
-
-# Function to set permissions
-set_permissions() {
-    echo "Setting write permissions for the group on $directory"
-    sudo chmod 775 $directory
-    echo "Permissions have been updated."
-}
-
-# Function to add user to the docker group
-add_user_to_docker_group() {
-    echo "Adding $USER to the docker group..."
-    sudo usermod -aG docker $USER
-    echo "$USER has been added to the docker group. Please log out and back in for this to take effect."
-}
-
-# Check if the script is run as root
+# Ensure the script is run as root
 if [ "$(id -u)" -ne 0 ]; then
-    echo "No write permission in $directory. Please run as root or request root to change permissions."
-    exit 1
+  echo "This script must be run as root. Please use 'sudo' to run this script."
+  exit 1
 fi
 
-# Check if directory exists
-if [ -d "$directory" ]; then
-    # Call function to set permissions
-    set_permissions
+# Step 1: Update the package repository
+echo "Updating package repository..."
+apt-get update
 
-    # Call function to add user to docker group
-    add_user_to_docker_group
-else
-    echo "Directory $directory does not exist. Please check your Docker installation."
-    exit 1
-fi
+# Step 2: Install required packages for Docker
+echo "Installing required packages for Docker..."
+apt-get install -y apt-transport-https ca-certificates curl software-properties-common
 
-# Step 3: Check permission to write in /etc/docker
-DAEMON_FILE="/etc/docker/daemon.json"
+# Step 3: Add the GPG key for the official Docker repository to the system
+echo "Adding the GPG key for Docker repository..."
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
 
-# Check if writable permissions exist in /etc/docker
-if [ ! -w "/etc/docker" ]; then
-    echo "No write permission in /etc/docker. Please run as root."
-    exit 1
-fi
+# Step 4: Add the Docker repository to APT sources
+echo "Adding Docker repository to APT sources..."
+add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+
+# Step 5: Update the package database with Docker packages from the newly added repo
+echo "Updating package database with Docker packages..."
+apt-get update
+
+# Step 6: Install Docker
+echo "Installing Docker..."
+apt-get install -y docker-ce
+
+# Step 7: Add current user to the Docker group
+echo "Adding $USER to the Docker group..."
+usermod -aG docker $USER
+
+echo "Installation completed. You may need to log out and back in for this to take effect."
+
 
 # Check if daemon.json already exists
 if [ -f "$DAEMON_FILE" ]; then
