@@ -180,43 +180,39 @@ sudo sed -i "s/127.0.1.1.*/127.0.1.1\t$new_hostname/" /etc/hosts
 echo "Hostname changed to $new_hostname"
 
 #Step 2 
-# Install Docker 
-
-# Ensure the script is run as root
-if [ "$(id -u)" -ne 0 ]; then
-  echo "This script must be run as root. Please use 'sudo' to run this script."
-  exit 1
-fi
+echo "This script will install Docker. Please provide your password if prompted."
 
 # Step 1: Update the package repository
 echo "Updating package repository..."
-apt-get update
+sudo apt-get update
 
 # Step 2: Install required packages for Docker
 echo "Installing required packages for Docker..."
-apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
 
 # Step 3: Add the GPG key for the official Docker repository to the system
 echo "Adding the GPG key for Docker repository..."
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
 
 # Step 4: Add the Docker repository to APT sources
 echo "Adding Docker repository to APT sources..."
-add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
 
 # Step 5: Update the package database with Docker packages from the newly added repo
 echo "Updating package database with Docker packages..."
-apt-get update
+sudo apt-get update
 
 # Step 6: Install Docker
 echo "Installing Docker..."
-apt-get install -y docker-ce
+sudo apt-get install -y docker-ce
 
 # Step 7: Add current user to the Docker group
 echo "Adding $USER to the Docker group..."
-usermod -aG docker $USER
+sudo usermod -aG docker $USER
 
 echo "Installation completed. You may need to log out and back in for this to take effect."
+
+
 
 
 # Check if daemon.json already exists
