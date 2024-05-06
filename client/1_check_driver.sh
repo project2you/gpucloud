@@ -70,8 +70,8 @@ if lsmod | grep -q nouveau; then
     sudo update-initramfs -u
 
     # รีสตาร์ทเครื่อง
-    echo "Rebooting the system..."
-    sudo reboot
+    #echo "Rebooting the system..."
+    #sudo reboot
 fi
 
 # ใช้คำสั่ง lspci เพื่อค้นหารายการของการ์ดจอ NVIDIA
@@ -236,5 +236,10 @@ sudo systemctl restart docker
 
 echo "Docker is now configured to use NVIDIA GPU."
 
+echo "Waiting for few minute before Rebooting..."
+sleep 3  # This will pause the script for 5 seconds
 
-
+# รีสตาร์ทเครื่อง
+#echo "Rebooting the system..."
+#sudo reboot
+    
