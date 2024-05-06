@@ -3,6 +3,29 @@ sudo apt update
 sudo apt upgrade -y
 
 sudo apt install build-essential
+sudo apt install nvidia-cuda-toolkit
+sudo apt install libboost-python-dev libboost-thread-dev
+
+sudo apt install python3-dev
+pip install --no-cache-dir pycuda
+
+# Define CUDA paths
+CUDA_BIN_PATH="/usr/local/cuda/bin"
+CUDA_LIB_PATH="/usr/local/cuda/lib64"
+
+# Write to .bashrc if the lines do not already exist
+if ! grep -q "export PATH=$CUDA_BIN_PATH:\$PATH" ~/.bashrc; then
+    echo "export PATH=$CUDA_BIN_PATH:\$PATH" >> ~/.bashrc
+    echo "Added CUDA bin path to PATH."
+fi
+
+if ! grep -q "export LD_LIBRARY_PATH=$CUDA_LIB_PATH:\$LD_LIBRARY_PATH" ~/.bashrc; then
+    echo "export LD_LIBRARY_PATH=$CUDA_LIB_PATH:\$LD_LIBRARY_PATH" >> ~/.bashrc
+    echo "Added CUDA lib path to LD_LIBRARY_PATH."
+fi
+
+echo "CUDA environment variables have been configured."
+
 
 # ตรวจสอบว่า Nouveau driver ถูก disable หรือยัง
 if lsmod | grep -q nouveau; then
