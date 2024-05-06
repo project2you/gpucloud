@@ -261,6 +261,7 @@ sudo systemctl restart docker
 echo "Docker service restarted."
 
 sudo usermod -aG docker $USER
+newgrp docker
 
 # pull images
 echo "Pulling Docker iamges..."
@@ -343,7 +344,7 @@ wget -O "$ENV_PATH/requirements.txt" https://raw.githubusercontent.com/project2y
 pip install -r "$ENV_PATH/requirements.txt"
 
 # Install additional packages
-pip install torch torchvision gunicorn Flask APScheduler
+pip install torch torchvision gunicorn Flask APScheduler requests docker
 
 echo "Python packages installed successfully."
 
