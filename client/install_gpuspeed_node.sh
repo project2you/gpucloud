@@ -190,7 +190,6 @@ echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docke
 sudo apt-get update -y
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io
 sudo usermod -aG docker $USER
-exit
 
 # Change permision docker
 directory="/etc/docker"
