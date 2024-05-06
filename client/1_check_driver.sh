@@ -240,6 +240,6 @@ echo "Waiting for few minute before Rebooting..."
 sleep 3  # This will pause the script for 5 seconds
 
 # รีสตาร์ทเครื่อง
-#echo "Rebooting the system..."
-#sudo reboot
+echo "Rebooting the system..."
+sudo reboot
     
