@@ -372,7 +372,7 @@ After=network.target
 [Service]
 Environment=ENV_PATH=/opt/gpuspeed/env
 WorkingDirectory=/opt/gpuspeed
-ExecStart=/bin/bash -c 'source \${ENV_PATH}/bin/activate && exec python app.py'
+ExecStart=/bin/bash -c 'source \${ENV_PATH}/bin/activate && exec gunicorn -w 2 -b 0.0.0.0:5002 app:app'
 User=$SUDO_USER
 Restart=on-failure
 
@@ -426,7 +426,12 @@ echo "Installation Completed"
 sudo systemctl daemon-reload
 sudo systemctl restart gpuspeed_client.service
 
+sudo usermod -aG docker $USER
+sudo chown root:docker /var/run/docker.sock
+sudo chmod 660 /var/run/docker.sock
 
+
+sudo systemctl restart gpuspeed_client
 sudo journalctl -u gpuspeed_client -f
-# sudo systemctl restart gpuspeed_client
+# 
 # sudo systemctl stop gpuspeed_client
