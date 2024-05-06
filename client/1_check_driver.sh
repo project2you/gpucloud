@@ -223,3 +223,36 @@ sudo systemctl restart docker
 
 echo "Docker is now configured to use NVIDIA GPU."
 
+
+# Define the URL of the NVIDIA driver
+# 2060 
+NVIDIA_DRIVER_URL="https://us.download.nvidia.com/XFree86/Linux-x86_64/550.78/NVIDIA-Linux-x86_64-550.78.run"
+
+# Define the path where the driver will be downloaded
+DOWNLOAD_PATH="/tmp/NVIDIA-Linux-x86_64-550.78.run"
+
+# Download the driver using wget (install wget if it's not installed)
+if ! command -v wget &> /dev/null
+then
+    echo "wget could not be found, installing..."
+    sudo apt-get install wget -y
+fi
+
+echo "Downloading NVIDIA driver..."
+wget -O "$DOWNLOAD_PATH" "$NVIDIA_DRIVER_URL"
+
+# Change the permission to make it executable
+chmod +x "$DOWNLOAD_PATH"
+
+# Stop the display manager to prevent it from interfering with the driver installation
+sudo systemctl stop lightdm.service  # This may vary depending on your display manager (e.g., gdm3, sddm)
+
+# Run the NVIDIA driver installer
+echo "Running the NVIDIA driver installer..."
+sudo "$DOWNLOAD_PATH" --dkms -s
+
+# Restart the display manager
+sudo systemctl start lightdm.service  # Adjust accordingly if using a different display manager
+
+echo "NVIDIA driver installation completed."
+
