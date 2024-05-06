@@ -1018,7 +1018,7 @@ def check_uptime():
     interface_name = 'tailscale0'
     ip_address = get_ip_address(interface_name)
 
-    url = "https://vpn.gpucloud.work/uptime"
+    url = "https://tailscale.gpuspeed.net/uptime"
     headers = {
         "Content-Type": "application/json",
         "Auth-Key": AUTH_KEY
@@ -1032,37 +1032,39 @@ def check_uptime():
     print(response.text)
     return response.text
 
-def random_time():
-    """Generate a random time in HH:MM format."""
-    hour = random.randint(0, 23)
-    minute = random.randint(0, 59)
-    print(f"{hour:02}:{minute:02}")
-    return f"{hour:02}:{minute:02}"
-
-def schedule_daily_task():
-    """Schedule the check_uptime function to run at a random time daily."""
-    random_generated_time = random_time()
-    print("APScheduler is working!")
-    print(f"Scheduled task at {random_generated_time} daily.")
-    # Clear existing job to prevent multiple triggers
-    scheduler.remove_job('daily_check', jobstore=None)
-    # Schedule new job
-    scheduler.add_job(check_uptime, 'cron', hour=random_generated_time[:2], minute=random_generated_time[3:], id='daily_check', replace_existing=True)
-
-# Initialize scheduler
 scheduler = BackgroundScheduler()
-scheduler.start()
 
-# Set the task to schedule a new random time daily at midnight
-scheduler.add_job(schedule_daily_task, 'cron', hour=0, minute=0)
-    
+def random_time():
+    """Generate a random future date and time, ensuring it's not in the past."""
+    current_time = datetime.datetime.now()
+    future_time = current_time + datetime.timedelta(minutes=random.randint(1, 1440))  # Adding up to 24 hours
+
+    # If generated time is still today but in the past, adjust it to a future time
+    if future_time.date() == current_time.date() and future_time.time() <= current_time.time():
+        future_time = current_time + datetime.timedelta(minutes=random.randint(1, 1440))
+
+    return future_time.strftime('%Y-%m-%d %H:%M')
+
+def uptime():
+    """Function to perform tasks and reschedule itself for the next random time."""
+    print(f"Uptime function running at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    next_time = random_time()
+    next_datetime = datetime.datetime.strptime(next_time, '%Y-%m-%d %H:%M')
+    scheduler.add_job(uptime, 'date', run_date=next_datetime, replace_existing=True, id='uptime_task')
+    print(f"Next uptime scheduled at {next_time}")
+    check_uptime()
+
+def schedule_first_task():
+    """Schedules the uptime task for the first time using the adjusted random_time function."""
+    first_time = random_time()
+    first_datetime = datetime.datetime.strptime(first_time, '%Y-%m-%d %H:%M')
+    scheduler.add_job(uptime, 'date', run_date=first_datetime, id='uptime_task')
+    print(f"First uptime scheduled at {first_time}")
+
 if __name__ == '__main__':
+    scheduler.start()
+    schedule_first_task()
     try:
-        app.run(debug=True,host="0.0.0.0",port=5002)  # เริ่มรัน Flask app
-        # รักษาการทำงานของโปรแกรมอย่างต่อเนื่อง
-        while True:
-            pass
+        app.run(host='0.0.0.0', debug=True , port=5002 , use_reloader=False )
     except (KeyboardInterrupt, SystemExit):
-        # ปิด scheduler อย่างปลอดภัยเมื่อโปรแกรมถูกขัดจังหวะ
         scheduler.shutdown()
-    
