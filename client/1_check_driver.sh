@@ -7,7 +7,38 @@ sudo apt install nvidia-cuda-toolkit
 sudo apt install libboost-python-dev libboost-thread-dev
 
 sudo apt install python3-dev
-pip install --no-cache-dir pycuda
+
+# Update package list
+echo "Updating package list..."
+
+# Install Python if it's not already installed
+if ! command -v python3 &> /dev/null
+then
+    echo "Python is not installed. Installing Python..."
+    sudo apt install python3 -y
+else
+    echo "Python is already installed."
+fi
+
+# Install pip for Python3 if it's not already installed
+if ! command -v pip3 &> /dev/null
+then
+    echo "pip is not installed. Installing pip..."
+    sudo apt install python3-pip -y
+else
+    echo "pip is already installed."
+fi
+
+# Optionally, create a symbolic link for 'pip' if it's not already there
+if [ ! -f /usr/bin/pip ] && [ -f /usr/bin/pip3 ]; then
+    echo "Creating a symbolic link for pip3 as pip..."
+    sudo ln -s /usr/bin/pip3 /usr/bin/pip
+fi
+
+echo "Installation completed successfully. pip is ready to use."
+
+
+
 
 # Define CUDA paths
 CUDA_BIN_PATH="/usr/local/cuda/bin"
