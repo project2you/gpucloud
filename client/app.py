@@ -1046,10 +1046,6 @@ def check_uptime():
     print(f"Download Speed: {speeds_net['network_down']} Mbps")
     print(f"Upload Speed: {speeds_net['network_up']} Mbps")
     
-    print(f"Download Speed: {speeds_net['network_down']} Mbps")
-    print(f"Upload Speed: {speeds_net['network_up']} Mbps")
-
-   
     # แทนที่ 'tailscale0' ด้วยชื่ออินเทอร์เฟสที่คุณต้องการดึงข้อมูล
     interface_name = 'tailscale0'
     ip_address = get_ip_address(interface_name)
@@ -1137,8 +1133,8 @@ if __name__ == '__main__':
 '''
 sudo nano /etc/systemd/system/gpuspeed_client.service
 sudo systemctl enable gpuspeed_client.service
-sudo systemctl restart  gpuspeed_client.service
-sudo systemctl status  gpuspeed_client.service
+sudo systemctl restart gpuspeed_client.service
+sudo systemctl status gpuspeed_client.service
 
 journalctl -u gpuspeed_client.service -f   
 '''
