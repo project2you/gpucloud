@@ -81,8 +81,6 @@ import asyncio
 from urllib.request import urlopen
 from urllib.error import URLError
 
-import subprocess
-
 import requests
 
 import time
@@ -767,8 +765,8 @@ def info():
         ram()
         gpu()
         flops()
-        uptime()
-
+        check_uptime = get_uptime_days_hours()
+    
         #Call speed_test
         speeds_net = test_internet_speed()
         print(f"Download Speed: {speeds_net['network_down']} Mbps")
@@ -827,7 +825,7 @@ def info():
             "region": str(get_location()),
             "network_up": str(speeds_net['network_up']),
             "network_down": str(speeds_net['network_down']),
-            "online_duration": str(info_uptime_days) ,
+            "online_duration": str(check_uptime) ,
             "ip": str(ip_address),
             'id_user':'user_0001',
             'rent_status':'0',
@@ -1006,31 +1004,105 @@ curl -X POST http://192.168.1.45:5001/uptime \
      -d '{"online_duration": "2", "ip": "100.124.210.22"}'
      
 '''
-
-
 scheduler = BackgroundScheduler()
 
-def get_ip_address(interface_name):
-    # Dummy return for demonstration
-    return "192.168.1.1"  # This should be replaced by actual method to retrieve IP
 
+def get_uptime_days_hours():
+    # รันคำสั่ง uptime และรับผลลัพธ์เป็น string
+    result = subprocess.run(['uptime'], capture_output=True, text=True)
+    uptime_output = result.stdout.strip()
+    
+    # สร้าง pattern สำหรับจับวันและชั่วโมง
+    pattern = r'(\d+ days?,)? (\d+ min,)? (\d+:\d+), (\d+ users,)?'
+    match = re.search(pattern, uptime_output)
+    
+    if match:
+        days = match.group(1).replace(',', '').strip() if match.group(1) else "0 days"
+        time = match.group(3)
+        # ตัดคำว่า 'min,' ออกหากมี
+        if match.group(2):
+            hours, minutes = time.split(':')
+            time = f"{int(hours) + 1} hours" if int(minutes) >= 30 else f"{hours} hours"
+        else:
+            hours, _ = time.split(':')
+            time = f"{hours} hours"
+        
+        return f"{days} {time}"
+    else:
+        return "Uptime 0"
+
+#เช็คเวลาในการออนไลน์
+@app.route('/check_uptime',methods=['POST'])
 def check_uptime():
     print("Check uptime")
     
-    global info_uptime_days
+    global info_uptime_days , AUTH_KEY
     info_uptime_days = "Extracted from some uptime checking logic"  # Example value
 
+    check_uptime = get_uptime_days_hours()
+    
+    #Call speed_test
+    speeds_net = test_internet_speed()
+    print(f"Download Speed: {speeds_net['network_down']} Mbps")
+    print(f"Upload Speed: {speeds_net['network_up']} Mbps")
+    
+    print(f"Download Speed: {speeds_net['network_down']} Mbps")
+    print(f"Upload Speed: {speeds_net['network_up']} Mbps")
+
+   
+    # แทนที่ 'tailscale0' ด้วยชื่ออินเทอร์เฟสที่คุณต้องการดึงข้อมูล
+    interface_name = 'tailscale0'
+    ip_address = get_ip_address(interface_name)
+    
+    now = datetime.datetime.now()
+    t = now.strftime("%H:%M:%S")
+    timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
+    timestamp = str(timestamp)
+
+    # สร้างไฟล์ขนาด 100MB
+    create_test_file('test_100mb.file', 100)
+
+    # ทดสอบด้วยไฟล์ 100 MB
+    write_speed, read_speed = test_disk_speed()
+    print(f"Disk Write Speed: {write_speed:.2f} MB/s")
+    print(f"Disk Read Speed: {read_speed:.2f} MB/s")
+
+    #เพิ่มเติมในส่วนของ GPU ว่ามีกี่อันในเครื่อง
+    # รับรายการของ GPU ที่มี
+    gpus = GPUtil.getGPUs()
+    num_gpus = len(gpus)
+    print(f"Number of GPUs: {num_gpus}")
+
+    # Measure and print the GPU speed
+    # วัดความเร็ว TFLOPS ของ GPU
+    info_gpu_flops = flops()
+    print(f"GPU flops : {info_gpu_flops} TFLOPS")
+
+    info_gpu_speed = measure_gpu_speed()
+    print(f"GPU Speed : {info_gpu_speed:.2f} GB/s")
+    
     interface_name = 'tailscale0'
     ip_address = get_ip_address(interface_name)
     url = "https://tailscale.gpuspeed.net/uptime"
     headers = {
         "Content-Type": "application/json",
-        "Auth-Key": "Your_Auth_Key"  # Replace with your actual AUTH_KEY
+        "Auth-Key": AUTH_KEY  # Replace with your actual AUTH_KEY
     }
+    
     data = {
-        "online_duration": info_uptime_days,
-        "ip": ip_address
+        'online_duration' : check_uptime ,
+         "ip": ip_address,
+        'network_down': speeds_net['network_down'],  # สมมติว่าได้ค่า download speed 50.5 Mbps
+        'network_up': speeds_net['network_up'],    # สมมติว่าได้ค่า upload speed 10.2 Mbps
+        'num_gpus' : num_gpus,
+        'info_gpu_flops' : info_gpu_flops,
+        'disk_write_speed': write_speed ,
+        'disk_read_speed' : read_speed
     }
+
+    # แปลงข้อมูลเป็น JSON และส่งกลับ
+    #return jsonify(data)
+
     response = requests.post(url, json=data, headers=headers)
     print(response.text)
     return response.text
@@ -1061,3 +1133,12 @@ if __name__ == '__main__':
         app.run(host='0.0.0.0', port=5002, use_reloader=False)
     except (KeyboardInterrupt, SystemExit):
         scheduler.shutdown()
+
+'''
+sudo nano /etc/systemd/system/gpuspeed_client.service
+sudo systemctl enable gpuspeed_client.service
+sudo systemctl restart  gpuspeed_client.service
+sudo systemctl status  gpuspeed_client.service
+
+journalctl -u gpuspeed_client.service -f   
+'''
