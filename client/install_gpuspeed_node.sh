@@ -168,6 +168,7 @@ echo "GEN_KEY=$gen_key" >> .env
 echo "PROMETHEUS_API=http://63.142.245.34:9090/api/v1/targets" > .env
 echo "GRAFANA_API=http://63.142.245.34:3000/api/dashboards/db" >> .env
 echo "GRAFANA_API_KEY=glsa_0msDDKJvmC51jFO7YjrIl8vun9Hf94hL_1ca35609" >> .env
+echo "SECRET_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MTUzNDM3MzAsImlhdCI6MTcxNTI1NzMzMH0.b5nw86jAKt_7TbkOMQFZvhfAifXZgSaojduPCji0sO8" >> .env
 
 echo "Created or updated .env file with API configuration."
 
