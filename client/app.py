@@ -157,65 +157,6 @@ def get_active_nodes():
         print(f'Error fetching targets from Prometheus: {e}')
         return []
 
-def create_full_dashboard_for_node(node):
-    """Create a comprehensive dashboard for a given node."""
-    dashboard_json = {
-        'dashboard': {
-            'id': None,
-            'uid': None,
-            'title': f'Dashboard for {node}',
-            'panels': [
-                {
-                    'title': 'CPU Usage',
-                    'type': 'graph',
-                    'targets': [{'expr': f'node_cpu_seconds_total{{instance="{node}"}}', 'format': 'time_series'}],
-                    'gridPos': {'x': 0, 'y': 0, 'w': 12, 'h': 6},
-                    'id': 1
-                },
-                {
-                    'title': 'Memory Usage',
-                    'type': 'graph',
-                    'targets': [{'expr': f'node_memory_MemAvailable_bytes{{instance="{node}"}}', 'format': 'time_series'}],
-                    'gridPos': {'x': 12, 'y': 0, 'w': 12, 'h': 6},
-                    'id': 2
-                },
-                {
-                    'title': 'Hard Disk Usage',
-                    'type': 'graph',
-                    'targets': [{'expr': f'node_filesystem_avail_bytes{{instance="{node}"}}', 'format': 'time_series'}],
-                    'gridPos': {'x': 0, 'y': 6, 'w': 12, 'h': 6},
-                    'id': 3
-                },
-                {
-                    'title': 'Network Usage',
-                    'type': 'graph',
-                    'targets': [{'expr': f'node_network_receive_bytes_total{{instance="{node}"}}', 'format': 'time_series'}],
-                    'gridPos': {'x': 12, 'y': 6, 'w': 12, 'h': 6},
-                    'id': 4
-                },
-                {
-                    'title': 'GPU Usage',
-                    'type': 'graph',
-                    'targets': [{'expr': f'nvidia_gpu_duty_cycle{{instance="{node}"}}', 'format': 'time_series'}],
-                    'gridPos': {'x': 0, 'y': 12, 'w': 24, 'h': 6},
-                    'id': 5
-                }
-            ],
-            'schemaVersion': 25,
-            'version': 1,
-            'overwrite': False
-        }
-    }
-
-    try:
-        response = requests.post(GRAFANA_API, headers=HEADERS, json=dashboard_json)
-        response.raise_for_status()
-        print(f'Successfully created dashboard for node: {node}')
-    except requests.RequestException as e:
-        print(f'Failed to create dashboard for node: {node}: {e}')
-#จบส่วนของ Dashboard
-##############################################################################################################
-
 
 # สมมติว่านี่คือฟังก์ชันสำหรับตรวจสอบ auth key
 def verify_auth_key(key, secret_key):
@@ -988,14 +929,79 @@ def docker_stop():
     return jsonify({"data": "success"})
 
 
+def create_full_dashboard_for_node(node):
+    """Create a comprehensive dashboard for a given node."""
+    dashboard_json = {
+        'dashboard': {
+            'id': None,
+            'uid': None,
+            'title': f' {node}',
+            'panels': [
+                {
+                    'title': 'CPU Usage',
+                    'type': 'graph',
+                    'targets': [{'expr': f'node_cpu_seconds_total{{instance="{node}"}}', 'format': 'time_series'}],
+                    'gridPos': {'x': 0, 'y': 0, 'w': 12, 'h': 6},
+                    'id': 1
+                },
+                {
+                    'title': 'Memory Usage',
+                    'type': 'graph',
+                    'targets': [{'expr': f'node_memory_MemAvailable_bytes{{instance="{node}"}}', 'format': 'time_series'}],
+                    'gridPos': {'x': 12, 'y': 0, 'w': 12, 'h': 6},
+                    'id': 2
+                },
+                {
+                    'title': 'Hard Disk Usage',
+                    'type': 'graph',
+                    'targets': [{'expr': f'node_filesystem_avail_bytes{{instance="{node}"}}', 'format': 'time_series'}],
+                    'gridPos': {'x': 0, 'y': 6, 'w': 12, 'h': 6},
+                    'id': 3
+                },
+                {
+                    'title': 'Network Usage',
+                    'type': 'graph',
+                    'targets': [{'expr': f'node_network_receive_bytes_total{{instance="{node}"}}', 'format': 'time_series'}],
+                    'gridPos': {'x': 12, 'y': 6, 'w': 12, 'h': 6},
+                    'id': 4
+                },
+                {
+                    'title': 'GPU Usage',
+                    'type': 'graph',
+                    'targets': [{'expr': f'nvidia_gpu_duty_cycle{{instance="{node}"}}', 'format': 'time_series'}],
+                    'gridPos': {'x': 0, 'y': 12, 'w': 24, 'h': 6},
+                    'id': 5
+                }
+            ],
+            'schemaVersion': 25,
+            'version': 1,
+            'overwrite': False
+        }
+    }
+
+    try:
+        response = requests.post(GRAFANA_API, headers=HEADERS, json=dashboard_json)
+        response.raise_for_status()
+        print(f'Successfully created dashboard for node: {node}')
+    except requests.RequestException as e:
+        print(f'Failed to create dashboard for node: {node}: {e}')
+#จบส่วนของ Dashboard
+##############################################################################################################
+
 def dashboard():
     try:
         hostname = get_hostname()
-        create_full_dashboard_for_node(hostname)
+        
+        # แทนที่ 'tailscale0' ด้วยชื่ออินเทอร์เฟสที่คุณต้องการดึงข้อมูล
+        interface_name = 'tailscale0'
+        ip_address = get_ip_address(interface_name)
+    
+        create_full_dashboard_for_node( hostname + " : "+ip_address )
         print("Begin create dashboard")
     except Exception as e:
         print(f"Error in dashboard function: {e}")
 
+#เมื่อรันโปรแกรมให้ทำการสร้าง dashboard
 dashboard() 
 
 '''
