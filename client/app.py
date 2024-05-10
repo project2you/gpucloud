@@ -132,10 +132,15 @@ AUTH_KEY = secret_key #"579cea2aa57a71706f75cb687d68c5a022af2346b0f40d3318871ce8
 container_id =''
 container_name = "gpucloud"  # ชื่อ container ที่คุณต้องการตรวจสอบและรัน
 
+import logging
+
+# Setup basic configuration for logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+
 app = Flask(__name__)
 
 #################################################################################################
-
 
 def get_hostname():
     """Retrieve the hostname of the current machine."""
@@ -757,7 +762,6 @@ def info():
     if request.method == 'POST':
         # ทำอะไรสักอย่างกับข้อมูลที่รับมา
         data = request.json
-        
         #Info
         cpu()
         hdd()
@@ -1004,6 +1008,7 @@ curl -X POST http://192.168.1.45:5001/uptime \
      -d '{"online_duration": "2", "ip": "100.124.210.22"}'
      
 '''
+# Create a scheduler instance
 scheduler = BackgroundScheduler()
 
 
@@ -1035,6 +1040,8 @@ def get_uptime_days_hours():
 @app.route('/check_uptime',methods=['POST'])
 def check_uptime():
     print("Check uptime")
+    # Example functionality of check_uptime
+    logging.info("Uptime and performing to server.")
     
     global info_uptime_days , AUTH_KEY
     info_uptime_days = "Extracted from some uptime checking logic"  # Example value
@@ -1102,25 +1109,31 @@ def check_uptime():
     response = requests.post(url, json=data, headers=headers)
     print(response.text)
     return response.text
-
 def random_time():
+    """Generate a future time within the next 1 to 30 minutes."""
     current_time = datetime.datetime.now()
-    future_time = current_time + datetime.timedelta(minutes=random.randint(1, 1440))
+    future_time = current_time + datetime.timedelta(minutes=random.randint(1, 30))
     return future_time.strftime('%Y-%m-%d %H:%M')
 
 def uptime():
-    print(f"Uptime function running at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    """Function to be scheduled to run at a random future time."""
+    logging.info(f"Uptime function running at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}")
     next_time = random_time()
     next_datetime = datetime.datetime.strptime(next_time, '%Y-%m-%d %H:%M')
     scheduler.add_job(uptime, 'date', run_date=next_datetime, replace_existing=True, id='uptime_task')
-    print(f"Next uptime scheduled at {next_time}")
+    logging.info(f"Next uptime scheduled at {next_time}")
+    # Assuming check_uptime() is defined elsewhere and needed here
     check_uptime()
 
 def schedule_first_task():
+    """Schedule the first call to the uptime function."""
     first_time = random_time()
     first_datetime = datetime.datetime.strptime(first_time, '%Y-%m-%d %H:%M')
     scheduler.add_job(uptime, 'date', run_date=first_datetime, id='uptime_task')
-    print(f"First uptime scheduled at {first_time}")
+    logging.info(f"First uptime scheduled at {first_time}")
+
+
+app = Flask(__name__)
 
 if __name__ == '__main__':
     scheduler.start()
@@ -1129,7 +1142,8 @@ if __name__ == '__main__':
         app.run(host='0.0.0.0', port=5002, use_reloader=False)
     except (KeyboardInterrupt, SystemExit):
         scheduler.shutdown()
-
+        
+        
 '''
 sudo nano /etc/systemd/system/gpuspeed_client.service
 sudo systemctl enable gpuspeed_client.service
