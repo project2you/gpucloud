@@ -996,10 +996,8 @@ def dashboard():
     except Exception as e:
         print(f"Error in dashboard function: {e}")
 
+dashboard() 
 
-#dashboard() 
-
-    
 '''
 ตัวอย่าง CURL
 curl -X POST http://192.168.1.45:5001/uptime \
