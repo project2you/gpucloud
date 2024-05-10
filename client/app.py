@@ -1011,30 +1011,30 @@ curl -X POST http://192.168.1.45:5001/uptime \
 # Create a scheduler instance
 scheduler = BackgroundScheduler()
 
-
 def get_uptime_days_hours():
-    # รันคำสั่ง uptime และรับผลลัพธ์เป็น string
+    # Run the uptime command and capture the output
     result = subprocess.run(['uptime'], capture_output=True, text=True)
     uptime_output = result.stdout.strip()
     
-    # สร้าง pattern สำหรับจับวันและชั่วโมง
-    pattern = r'(\d+ days?,)? (\d+ min,)? (\d+:\d+), (\d+ users,)?'
+    # Adjusted pattern to match "X days, HH:MM"
+    pattern = r'up\s+(\d+)\s+days?,\s+(\d+):(\d+),'
     match = re.search(pattern, uptime_output)
     
     if match:
-        days = match.group(1).replace(',', '').strip() if match.group(1) else "0 days"
-        time = match.group(3)
-        # ตัดคำว่า 'min,' ออกหากมี
-        if match.group(2):
-            hours, minutes = time.split(':')
-            time = f"{int(hours) + 1} hours" if int(minutes) >= 30 else f"{hours} hours"
-        else:
-            hours, _ = time.split(':')
-            time = f"{hours} hours"
+        days = match.group(1)  # Days directly captured
+        hours = match.group(2)  # Hours directly captured
+        minutes = int(match.group(3))  # Convert minutes to integer for rounding
         
-        return f"{days} {time}"
+        # Consider rounding up the hour if minutes are 30 or more
+        if minutes >= 30:
+            hours = str(int(hours) + 1) + " hours"
+        else:
+            hours = str(hours) + " hours"
+        
+        return f"{days} days {hours}"
     else:
         return "Uptime 0"
+
 
 #เช็คเวลาในการออนไลน์
 @app.route('/check_uptime',methods=['POST'])
@@ -1103,16 +1103,28 @@ def check_uptime():
         'disk_read_speed' : read_speed
     }
 
-    # แปลงข้อมูลเป็น JSON และส่งกลับ
-    #return jsonify(data)
-
-    response = requests.post(url, json=data, headers=headers)
-    print(response.text)
-    return response.text
+    #ตรวจสอบว่ามีข้อมูล ครบไหม ทดสอบ Speed
+    # Ensure the key 'network_down' exists and the value is not None or "None"
+    if speeds_net['network_down'] not in [None, "None"]:
+        try:
+            response = requests.post(url, json=data, headers=headers)
+            if response.status_code == 200:
+                print("Success:", response.text)
+            else:
+                print("Failed to post data:", response.status_code)
+            return response.text
+        except requests.RequestException as e:
+            print("Request failed:", e)
+            return str(e)
+    else:
+        print("No valid data for 'network_down'")
+        return "No valid data for 'network_down'"
+    
+    
 def random_time():
     """Generate a future time within the next 1 to 30 minutes."""
     current_time = datetime.datetime.now()
-    future_time = current_time + datetime.timedelta(minutes=random.randint(1, 30))
+    future_time = current_time + datetime.timedelta(minutes=random.randint(1, 60))
     return future_time.strftime('%Y-%m-%d %H:%M')
 
 def uptime():
