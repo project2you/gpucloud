@@ -1,0 +1,13 @@
+#เมื่อสร้าง Docker เสร็จแล้วทำการ Build
+docker build --no-cache -t jupyter-nvidia-gpucloud .
+
+docker login
+docker tag jupyter-nvidia-gpucloud project2you/jupyter-nvidia-gpucloud:1.0
+docker push  project2you/jupyter-nvidia-gpucloud:1.0
+
+sudo chmod +x install.sh
+bash install.sh
+
+sudo systemctl daemon-reload
+sudo systemctl restart gpucloud_client
+sudo journalctl -u gpucloud_client -f
