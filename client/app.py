@@ -1092,6 +1092,9 @@ def check_uptime():
         "Auth-Key": AUTH_KEY  # Replace with your actual AUTH_KEY
     }
     
+    disk_write_speed = round(write_speed, 2)
+    disk_read_speed = round(read_speed, 2)
+
     data = {
         'online_duration' : check_uptime ,
          "ip": ip_address,
@@ -1099,8 +1102,8 @@ def check_uptime():
         'network_up': speeds_net['network_up'],    # สมมติว่าได้ค่า upload speed 10.2 Mbps
         'num_gpus' : num_gpus,
         'info_gpu_flops' : info_gpu_flops,
-        'disk_write_speed': write_speed ,
-        'disk_read_speed' : read_speed
+        'disk_write_speed': disk_write_speed,
+        'disk_read_speed': disk_read_speed
     }
 
     #ตรวจสอบว่ามีข้อมูล ครบไหม ทดสอบ Speed
