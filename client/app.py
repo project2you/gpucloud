@@ -1191,7 +1191,6 @@ if __name__ == '__main__':
         app.run(host='0.0.0.0', port=5002, use_reloader=False)
     except (KeyboardInterrupt, SystemExit):
         scheduler.shutdown()
-        
 
 '''
 sudo nano /etc/systemd/system/gpuspeed_client.service
