@@ -191,7 +191,7 @@ echo "This script will install Docker. Please provide your password if prompted.
 
 # Step 1: Update the package repository
 echo "Updating package repository..."
-sudo apt-get update
+sudo apt-get update -y
 
 # Step 2: Install required packages for Docker
 echo "Installing required packages for Docker..."
@@ -207,7 +207,7 @@ sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubun
 
 # Step 5: Update the package database with Docker packages from the newly added repo
 echo "Updating package database with Docker packages..."
-sudo apt-get update
+sudo apt-get update -y
 
 # Step 6: Install Docker
 echo "Installing Docker..."
@@ -218,9 +218,6 @@ echo "Adding $USER to the Docker group..."
 sudo usermod -aG docker $USER
 
 echo "Installation completed. You may need to log out and back in for this to take effect."
-
-
-
 
 # Check if daemon.json already exists
 if [ -f "$DAEMON_FILE" ]; then
@@ -279,7 +276,7 @@ sudo apt install build-essential -y
 #install Cuda
 wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
 sudo dpkg -i cuda-keyring_1.1-1_all.deb
-sudo apt-get update
+sudo apt-get update -y
 
 
 # Install Python 3.10 and the Python 3.10 development and venv packages
@@ -446,10 +443,9 @@ sudo chmod 660 /var/run/docker.sock
 
 # ออกจากโหมด root และกลับไปยังผู้ใช้ปกติ ถ้ามี
 if [ -n "$SUDO_USER" ]; then
-   echo "กลับไปยังผู้ใช้ $SUDO_USER"
    su - $SUDO_USER
 else
-   echo "ไม่พบผู้ใช้ปกติ ออกจากสคริปต์."
+   echo "None."
 fi
 
 exit 0
