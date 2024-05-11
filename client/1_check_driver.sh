@@ -239,6 +239,9 @@ sudo systemctl restart docker
 
 echo "Docker is now configured to use NVIDIA GPU."
 
+docker pull project2you/jupyter-nvidia-gpuspeed:1.0
+docker pull prom/node-exporter
+
 echo "Waiting for few minute before Rebooting..."
 sleep 3  # This will pause the script for 5 seconds
 
