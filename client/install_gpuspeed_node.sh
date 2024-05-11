@@ -409,12 +409,6 @@ if [ -z "$data" ]; then
     exit 1
 fi
 
-echo "Restart VPN Services..."
-sudo systemctl stop tailscaled
-sudo systemctl start tailscaled
-
-echo "Please waiting about authentication..."
-sudo tailscale up --auth-key=$data --operator=$USER
 
 #Install nvidia-gpucloud:1.0
 docker pull project2you/jupyter-nvidia-gpuspeed:1.0
@@ -447,5 +441,12 @@ if [ -n "$SUDO_USER" ]; then
 else
    echo "None."
 fi
+
+echo "Restart VPN Services..."
+sudo systemctl stop tailscaled
+sudo systemctl start tailscaled
+
+echo "Please waiting about authentication..."
+sudo tailscale up --auth-key=$data --operator=$USER
 
 exit 0
