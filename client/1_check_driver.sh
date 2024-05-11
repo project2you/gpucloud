@@ -231,6 +231,8 @@ sudo systemctl restart docker
 
 echo "Docker is configured to use the NVIDIA runtime."
 
+sudo usermod -aG docker $USER
+
 # รีสตาร์ท Docker เพื่อให้การตั้งค่ามีผล
 sudo systemctl restart docker
 
