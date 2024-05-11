@@ -24,6 +24,7 @@ import struct
 import GPUtil
 
 from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers.base import JobLookupError
 
 import asyncio
 import websockets
@@ -1129,9 +1130,10 @@ def check_uptime():
     
     
 def random_time():
-    """Generate a future time within the next 1 to 30 minutes."""
+    """Generate a future time within the next 24 hours."""
     current_time = datetime.datetime.now()
-    future_time = current_time + datetime.timedelta(minutes=random.randint(1, 60))
+    # Generate a random time within the next 24 hours (1440 minutes in a day)
+    future_time = current_time + datetime.timedelta(minutes=random.randint(1, 1440))
     return future_time.strftime('%Y-%m-%d %H:%M')
 
 def uptime():
@@ -1150,7 +1152,21 @@ def schedule_first_task():
     first_datetime = datetime.datetime.strptime(first_time, '%Y-%m-%d %H:%M')
     scheduler.add_job(uptime, 'date', run_date=first_datetime, id='uptime_task')
     logging.info(f"First uptime scheduled at {first_time}")
+    
+def safely_remove_job(scheduler, job_id):
+    try:
+        if scheduler.get_job(job_id):
+            scheduler.remove_job(job_id)
+            print(f"Job {job_id} removed successfully.")
+        else:
+            print(f"No job with ID {job_id} found.")
+    except JobLookupError:
+        print(f"Failed to find the job {job_id}.")
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
 
+# Example usage
+safely_remove_job(scheduler, 'daily_check')
 
 app = Flask(__name__)
 
