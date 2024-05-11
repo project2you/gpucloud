@@ -722,7 +722,7 @@ def info():
         interface_name = 'tailscale0'
         ip_address = get_ip_address(interface_name)
 
-        now = datetime.now()
+        now = datetime.datetime.now()
         t = now.strftime("%H:%M:%S")
         timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
         timestamp = str(timestamp)
