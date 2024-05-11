@@ -1,6 +1,6 @@
 #!/bin/bash
 sudo apt update
-sudo apt upgrade -y
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y upgrade
 
 echo "Setting timezone to Asia/Bangkok..."
 sudo timedatectl set-timezone Asia/Bangkok
