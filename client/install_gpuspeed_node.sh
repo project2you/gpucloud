@@ -409,12 +409,12 @@ if [ -z "$data" ]; then
     exit 1
 fi
 
-
-#Install nvidia-gpucloud:1.0
-docker pull project2you/jupyter-nvidia-gpuspeed:1.0
+#Install nvidia-gpuspeed:1.0
+#docker pull project2you/jupyter-nvidia-gpuspeed:1.0
+#docker pull prom/node-exporter
 
 #Install node-exporter
-docker pull prom/node-exporter
+
 docker run -d -p 9100:9100 --name=node_exporter prom/node-exporter
 
 echo "Node Exporter Status:"
