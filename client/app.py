@@ -24,7 +24,6 @@ import struct
 import GPUtil
 
 from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.schedulers.base import JobLookupError
 
 import asyncio
 import websockets
@@ -1043,7 +1042,7 @@ def get_uptime_days_hours():
 
 #เช็คเวลาในการออนไลน์
 @app.route('/check_uptime',methods=['POST'])
-def check_uptime():
+def check_uptime_node():
     print("Check uptime")
     # Example functionality of check_uptime
     logging.info("Uptime and performing to server.")
@@ -1129,54 +1128,73 @@ def check_uptime():
         return "No valid data for 'network_down'"
     
     
-def random_time():
-    """Generate a future time within the next 24 hours."""
-    current_time = datetime.datetime.now()
-    # Generate a random time within the next 24 hours (1440 minutes in a day)
-    future_time = current_time + datetime.timedelta(minutes=random.randint(1, 1440))
-    return future_time.strftime('%Y-%m-%d %H:%M')
+
+# Set up logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Interval in minutes for the scheduler
+SCHEDULE_INTERVAL = 2
+
+# Create a scheduler instance
+scheduler = BackgroundScheduler()
+
+def get_uptime_days_hours():
+    """Run the uptime command and capture the output, returning formatted uptime."""
+    result = subprocess.run(['uptime'], capture_output=True, text=True)
+    uptime_output = result.stdout.strip()
+    pattern = r'up\s+(\d+)\s+days?,\s+(\d+):(\d+),'
+    match = re.search(pattern, uptime_output)
+    if match:
+        days = match.group(1)
+        hours = match.group(2)
+        minutes = int(match.group(3))
+        if minutes >= 30:
+            hours = str(int(hours) + 1) + " hours"
+        else:
+            hours = str(hours) + " hours"
+        return f"{days} days {hours}"
+    return "Uptime 0"
+
+def schedule_uptime_task():
+    """Schedules the uptime function to run at set intervals."""
+    next_run_time = datetime.datetime.now() + datetime.timedelta(minutes=SCHEDULE_INTERVAL)
+    scheduler.add_job(uptime, 'interval', minutes=SCHEDULE_INTERVAL, next_run_time=next_run_time, replace_existing=True, id='uptime_task')
+    logging.info(f"Next uptime scheduled at {next_run_time.strftime('%Y-%m-%d %H:%M')}")
+    check_uptime_node()
 
 def uptime():
-    """Function to be scheduled to run at a random future time."""
-    logging.info(f"Uptime function running at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}")
-    next_time = random_time()
-    next_datetime = datetime.datetime.strptime(next_time, '%Y-%m-%d %H:%M')
-    scheduler.add_job(uptime, 'date', run_date=next_datetime, replace_existing=True, id='uptime_task')
-    logging.info(f"Next uptime scheduled at {next_time}")
-    # Assuming check_uptime() is defined elsewhere and needed here
-    check_uptime()
+    """Logs current uptime and schedules the next run."""
+    current_time_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
+    logging.info(f"Uptime function running at {current_time_str}")
+    uptime_info = get_uptime_days_hours()
+    logging.info(f"System Uptime: {uptime_info}")
+    schedule_uptime_task()
 
-def schedule_first_task():
-    """Schedule the first call to the uptime function."""
-    first_time = random_time()
-    first_datetime = datetime.datetime.strptime(first_time, '%Y-%m-%d %H:%M')
-    scheduler.add_job(uptime, 'date', run_date=first_datetime, id='uptime_task')
-    logging.info(f"First uptime scheduled at {first_time}")
-    
-def safely_remove_job(scheduler, job_id):
+def safely_remove_job(job_id):
+    """Attempts to remove a scheduled job by ID."""
+    from apscheduler.jobstores.base import JobLookupError
     try:
         if scheduler.get_job(job_id):
             scheduler.remove_job(job_id)
             print(f"Job {job_id} removed successfully.")
         else:
             print(f"No job with ID {job_id} found.")
-    except JobLookupError:
-        print(f"Failed to find the job {job_id}.")
+    except JobLookupError as e:
+        print(f"Failed to find the job {job_id}. Error: {e}")
     except Exception as e:
-        print(f"An error occurred: {str(e)}")
-
-# Example usage
-safely_remove_job(scheduler, 'daily_check')
+        print(f"An error occurred: {e}")
 
 app = Flask(__name__)
 
 if __name__ == '__main__':
     scheduler.start()
-    schedule_first_task()
+    schedule_uptime_task()  # Initial scheduling
     try:
         app.run(host='0.0.0.0', port=5002, use_reloader=False)
     except (KeyboardInterrupt, SystemExit):
         scheduler.shutdown()
+        
+    
         
         
 '''
