@@ -392,6 +392,15 @@ echo "Service $SERVICE_NAME has been created and started."
 
 echo "Setup complete. Environment is ready."
 
+# ออกจากโหมด root และกลับไปยังผู้ใช้ปกติ ถ้ามี
+if [ -n "$SUDO_USER" ]; then
+   echo "กลับไปยังผู้ใช้ $SUDO_USER"
+   su - $SUDO_USER
+else
+   echo "ไม่พบผู้ใช้ปกติ ออกจากสคริปต์."
+fi
+
+exit 0
 
 # VPN setup
 curl -fsSL https://tailscale.com/install.sh | sh
@@ -413,24 +422,11 @@ tailscale up --auth-key=$data --operator=ubuntu
 docker pull project2you/jupyter-nvidia-gpuspeed:1.0
 
 #Install node-exporter
-sudo docker pull prom/node-exporter
-sudo docker run -d -p 9100:9100 --name=node_exporter prom/node-exporter
+docker pull prom/node-exporter
+docker run -d -p 9100:9100 --name=node_exporter prom/node-exporter
 
 echo "Node Exporter Status:"
 sudo docker ps -f name=node_exporter
-
-sudo gpasswd -a $USER docker
-newgrp docker
-
-# ออกจากโหมด root และกลับไปยังผู้ใช้ปกติ ถ้ามี
-if [ -n "$SUDO_USER" ]; then
-   echo "กลับไปยังผู้ใช้ $SUDO_USER"
-   su - $SUDO_USER
-else
-   echo "ไม่พบผู้ใช้ปกติ ออกจากสคริปต์."
-fi
-
-exit 0
 
 echo "Installation Completed"
 
