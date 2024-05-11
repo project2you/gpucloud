@@ -6,11 +6,11 @@ echo "Setting timezone to Asia/Bangkok..."
 sudo timedatectl set-timezone Asia/Bangkok
 echo "Timezone is set to $(timedatectl | grep 'Time zone')"
 
-sudo apt install build-essential
-sudo apt install nvidia-cuda-toolkit
-sudo apt install libboost-python-dev libboost-thread-dev
+sudo apt install build-essential -y
+sudo apt install nvidia-cuda-toolkit -y
+sudo apt install libboost-python-dev libboost-thread-dev -y
 
-sudo apt install python3-dev
+sudo apt install python3-dev -y
 
 # Update package list
 echo "Updating package list..."
@@ -40,9 +40,6 @@ if [ ! -f /usr/bin/pip ] && [ -f /usr/bin/pip3 ]; then
 fi
 
 echo "Installation completed successfully. pip is ready to use."
-
-
-
 
 # Define CUDA paths
 CUDA_BIN_PATH="/usr/local/cuda/bin"
@@ -150,7 +147,7 @@ check_cuda_installed() {
 # Function to install CUDA
 install_cuda() {
     echo "Starting CUDA installation..."
-    sudo apt update
+    sudo apt update -y
     sudo apt install nvidia-cuda-toolkit -y
     echo "CUDA installation completed."
 }
@@ -165,13 +162,13 @@ fi
 #Cuda
 wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
 sudo dpkg -i cuda-keyring_1.1-1_all.deb
-sudo apt-get update
+sudo apt-get update -y
 sudo apt-get -y install cuda
 
 # เพิ่ม GPG key และติดตั้ง nvidia-docker
 curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
 curl -s -L https://nvidia.github.io/nvidia-docker/ubuntu22.04/nvidia-docker.list > /etc/apt/sources.list.d/nvidia-docker.list
-sudo apt update
+sudo apt update -y
 sudo apt -y install nvidia-container-toolkit
 
 # รีสตาร์ท Docker
@@ -184,7 +181,7 @@ echo "NVIDIA driver and nvidia-container-toolkit installation completed."
 curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
 distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
 curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
-sudo apt-get update
+sudo apt-get update -y
 sudo apt-get install -y nvidia-docker2
 
 # รีสตาร์ท Docker เพื่อใช้งานกับ NVIDIA
@@ -198,7 +195,7 @@ curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dear
     sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
     sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
 
-sudo apt-get update
+sudo apt-get update -y
 
 sudo apt-get install -y nvidia-container-toolkit
 
