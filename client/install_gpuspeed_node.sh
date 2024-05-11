@@ -419,13 +419,6 @@ sudo docker run -d -p 9100:9100 --name=node_exporter prom/node-exporter
 echo "Node Exporter Status:"
 sudo docker ps -f name=node_exporter
 
-echo "Installation Completed"
-
-sudo systemctl daemon-reload  # Reload systemd manager configuration
-sudo systemctl restart docker  # Restart Docker service
-
-sudo systemctl restart gpuspeed_client.service
-
 sudo gpasswd -a $USER docker
 newgrp docker
 
@@ -436,6 +429,13 @@ if [ -n "$SUDO_USER" ]; then
 else
    echo "ไม่พบผู้ใช้ปกติ ออกจากสคริปต์."
 fi
+
+echo "Installation Completed"
+
+sudo systemctl daemon-reload  # Reload systemd manager configuration
+sudo systemctl restart docker  # Restart Docker service
+
+sudo systemctl restart gpuspeed_client.service
 
 sudo chown root:docker /var/run/docker.sock
 sudo chmod 660 /var/run/docker.sock
