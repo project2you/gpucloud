@@ -825,7 +825,7 @@ def docker_start():
 
         # ตรวจสอบ image จาก Docker Hub
         print("Pulling Jupyter Docker image...")
-        check_and_pull_image('project2you/jupyter-nvidia-gpucloud:1.0')
+        check_and_pull_image('project2you/jupyter-nvidia-gpuspeed:1.0')
         
         try:
             # ตรวจสอบว่ามี container ที่มีชื่อนี้ทำงานอยู่หรือไม่
@@ -836,7 +836,7 @@ def docker_start():
             print(f"No existing container with name '{container_name}'. Proceeding to run a new one.")
 
         # ต่อจากนี้คือโค้ดเพื่อรัน container ใหม่
-        image_name = "project2you/jupyter-nvidia-gpucloud:1.0"
+        image_name = "project2you/jupyter-nvidia-gpuspeed:1.0"
 
         port_mapping = {'8888/tcp': port}
         
