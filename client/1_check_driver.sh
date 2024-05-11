@@ -2,6 +2,10 @@
 sudo apt update
 sudo apt upgrade -y
 
+echo "Setting timezone to Asia/Bangkok..."
+sudo timedatectl set-timezone Asia/Bangkok
+echo "Timezone is set to $(timedatectl | grep 'Time zone')"
+
 sudo apt install build-essential
 sudo apt install nvidia-cuda-toolkit
 sudo apt install libboost-python-dev libboost-thread-dev
