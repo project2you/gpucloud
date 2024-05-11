@@ -428,10 +428,10 @@ sudo systemctl restart gpuspeed_client.service
 sudo chown root:docker /var/run/docker.sock
 sudo chmod 660 /var/run/docker.sock
 
-sudo systemctl restart gpuspeed_client
+#sudo systemctl restart gpuspeed_client
 
-sudo journalctl -u gpuspeed_client -f
-# sudo systemctl stop gpuspeed_client
+#sudo journalctl -u gpuspeed_client -f
+#sudo systemctl stop gpuspeed_client
 
 # ออกจากโหมด root และกลับไปยังผู้ใช้ปกติ ถ้ามี
 if [ -n "$SUDO_USER" ]; then
