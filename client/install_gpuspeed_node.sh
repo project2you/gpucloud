@@ -412,7 +412,7 @@ echo "Data received: $data"
 tailscale up --auth-key=$data --operator=ubuntu
 
 #Install nvidia-gpucloud:1.0
-docker pull project2you/jupyter-nvidia-gpucloud:1.0
+docker pull project2you/jupyter-nvidia-gpuspeed:1.0
 
 #Install node-exporter
 sudo docker pull prom/node-exporter
