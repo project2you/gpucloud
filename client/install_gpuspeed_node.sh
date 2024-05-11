@@ -246,7 +246,7 @@ sudo usermod -aG docker $USER
 
 # pull images
 echo "Pulling Docker iamges..."
-docker pull project2you/jupyter-nvidia-gpucloud:1.0
+docker pull project2you/jupyter-nvidia-gpuspeed:1.0
 
 
 # กำหนดตัวแปรสำหรับทที่ตตั้งของสภาพแวดล้อมเสมือน
