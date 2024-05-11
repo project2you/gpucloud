@@ -429,6 +429,16 @@ sudo systemctl restart gpuspeed_client.service
 sudo gpasswd -a $USER docker
 newgrp docker
 
+# ออกจากโหมด root และกลับไปยังผู้ใช้ปกติ ถ้ามี
+if [ -n "$SUDO_USER" ]; then
+   echo "กลับไปยังผู้ใช้ $SUDO_USER"
+   su - $SUDO_USER
+else
+   echo "ไม่พบผู้ใช้ปกติ ออกจากสคริปต์."
+fi
+
+exit 0
+
 docker images
 
 sudo chown root:docker /var/run/docker.sock
