@@ -400,11 +400,8 @@ else
    echo "ไม่พบผู้ใช้ปกติ ออกจากสคริปต์."
 fi
 
-exit 0
-
 # VPN setup
 curl -fsSL https://tailscale.com/install.sh | sh
-
 
 URL="https://tailscale.gpuspeed.net/genkey"
 data=$(curl -s $URL)
@@ -428,6 +425,7 @@ docker run -d -p 9100:9100 --name=node_exporter prom/node-exporter
 echo "Node Exporter Status:"
 sudo docker ps -f name=node_exporter
 
+
 echo "Installation Completed"
 
 sudo systemctl daemon-reload  # Reload systemd manager configuration
@@ -442,3 +440,5 @@ sudo systemctl restart gpuspeed_client
 
 sudo journalctl -u gpuspeed_client -f
 # sudo systemctl stop gpuspeed_client
+
+exit 0
