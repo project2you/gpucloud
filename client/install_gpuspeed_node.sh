@@ -165,7 +165,7 @@ echo "PHONE=$phone" >> .env
 echo "GEN_KEY=$gen_key" >> .env
 
 # Update .env file with API endpoints and keys
-echo "PROMETHEUS_API=https://prometheus-api.gpuspeed.net/api/v1/targets" > .env
+echo "PROMETHEUS_API=https://prometheus.gpuspeed.net/api/v1/targets" > .env
 echo "GRAFANA_API=https://grafana.gpuspeed.net/api/dashboards/db" >> .env
 echo "GRAFANA_API_KEY=glsa_TsnvlyJlcKpDyOnH7NDcuTVX85QJDgEA_e7eee357" >> .env
 echo "SECRET_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MTU0ODcwMzQsImlhdCI6MTcxNTQwMDYzNH0.G6yHuOuVPlfQzUBDzCTgeMrtXlIDDVC7S9qs4R8CJws" >> .env
