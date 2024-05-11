@@ -392,14 +392,6 @@ echo "Service $SERVICE_NAME has been created and started."
 
 echo "Setup complete. Environment is ready."
 
-# ออกจากโหมด root และกลับไปยังผู้ใช้ปกติ ถ้ามี
-if [ -n "$SUDO_USER" ]; then
-   echo "กลับไปยังผู้ใช้ $SUDO_USER"
-   su - $SUDO_USER
-else
-   echo "ไม่พบผู้ใช้ปกติ ออกจากสคริปต์."
-fi
-
 # VPN setup
 curl -fsSL https://tailscale.com/install.sh | sh
 
@@ -440,5 +432,13 @@ sudo systemctl restart gpuspeed_client
 
 sudo journalctl -u gpuspeed_client -f
 # sudo systemctl stop gpuspeed_client
+
+# ออกจากโหมด root และกลับไปยังผู้ใช้ปกติ ถ้ามี
+if [ -n "$SUDO_USER" ]; then
+   echo "กลับไปยังผู้ใช้ $SUDO_USER"
+   su - $SUDO_USER
+else
+   echo "ไม่พบผู้ใช้ปกติ ออกจากสคริปต์."
+fi
 
 exit 0
