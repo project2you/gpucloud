@@ -408,8 +408,8 @@ if [ -z "$data" ]; then
     exit 1
 fi
 
-echo "Data received: $data"
-tailscale up --auth-key=$data --operator=ubuntu
+echo "Please waiting about authentication..."
+sudo tailscale up --auth-key=$data --operator=$USER
 
 #Install nvidia-gpucloud:1.0
 docker pull project2you/jupyter-nvidia-gpuspeed:1.0
@@ -420,7 +420,6 @@ docker run -d -p 9100:9100 --name=node_exporter prom/node-exporter
 
 echo "Node Exporter Status:"
 sudo docker ps -f name=node_exporter
-
 
 echo "Installation Completed"
 
