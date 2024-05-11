@@ -430,6 +430,8 @@ else
    echo "ไม่พบผู้ใช้ปกติ ออกจากสคริปต์."
 fi
 
+exit 0
+
 echo "Installation Completed"
 
 sudo systemctl daemon-reload  # Reload systemd manager configuration
