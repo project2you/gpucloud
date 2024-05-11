@@ -1184,8 +1184,6 @@ def safely_remove_job(job_id):
     except Exception as e:
         print(f"An error occurred: {e}")
 
-app = Flask(__name__)
-
 if __name__ == '__main__':
     scheduler.start()
     schedule_uptime_task()  # Initial scheduling
@@ -1194,9 +1192,7 @@ if __name__ == '__main__':
     except (KeyboardInterrupt, SystemExit):
         scheduler.shutdown()
         
-    
-        
-        
+
 '''
 sudo nano /etc/systemd/system/gpuspeed_client.service
 sudo systemctl enable gpuspeed_client.service
