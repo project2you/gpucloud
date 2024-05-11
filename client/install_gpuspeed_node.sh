@@ -437,10 +437,6 @@ else
    echo "ไม่พบผู้ใช้ปกติ ออกจากสคริปต์."
 fi
 
-exit 0
-
-docker images
-
 sudo chown root:docker /var/run/docker.sock
 sudo chmod 660 /var/run/docker.sock
 
