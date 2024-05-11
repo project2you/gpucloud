@@ -1,4 +1,5 @@
 #!/bin/bash
+export DEBIAN_FRONTEND=noninteractive
 
 sudo apt update
 sudo apt upgrade -y
@@ -162,12 +163,15 @@ done
 gen_key=$(openssl rand -base64 32)
 
 # Save information in .env file
+# สร้างไฟล์ .env ใหม่หรือเขียนทับไฟล์เดิม (ใช้ > ในบรรทัดแรกเพื่อสร้างใหม่/เขียนทับ)
 echo "HOST=$new_hostname" > .env
-echo "NAME=$name" > .env
-echo "EMAIL=$email" > .env
-echo "PHONE=$phone" > .env
-echo "GEN_KEY=$gen_key" > .env
-echo "PROMETHEUS_API=https://prometheus.gpuspeed.net/api/v1/targets" > .env
+
+# เพิ่มข้อมูลเพิ่มเติมในไฟล์ .env (ใช้ >> เพื่อเพิ่มข้อมูลโดยไม่ลบข้อมูลเดิม)
+echo "NAME=$name" >> .env
+echo "EMAIL=$email" >> .env
+echo "PHONE=$phone" >> .env
+echo "GEN_KEY=$gen_key" >> .env
+echo "PROMETHEUS_API=https://prometheus.gpuspeed.net/api/v1/targets" >> .env
 echo "GRAFANA_API=https://grafana.gpuspeed.net/api/dashboards/db" >> .env
 echo "GRAFANA_API_KEY=glsa_TsnvlyJlcKpDyOnH7NDcuTVX85QJDgEA_e7eee357" >> .env
 echo "SECRET_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MTU0ODcwMzQsImlhdCI6MTcxNTQwMDYzNH0.G6yHuOuVPlfQzUBDzCTgeMrtXlIDDVC7S9qs4R8CJws" >> .env
