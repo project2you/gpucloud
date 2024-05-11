@@ -373,7 +373,7 @@ After=network.target
 [Service]
 Environment=ENV_PATH=/opt/gpuspeed/env
 WorkingDirectory=/opt/gpuspeed
-ExecStart=/bin/bash -c 'source \${ENV_PATH}/bin/activate && exec gunicorn -w 2 -b 0.0.0.0:5002 app:app'
+ExecStart=/bin/bash -c 'source \${ENV_PATH}/bin/activate && exec python app.py'
 User=$SUDO_USER
 Restart=on-failure
 
