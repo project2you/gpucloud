@@ -63,8 +63,8 @@ import GPUtil
 from tabulate import tabulate
 
 #Database
-from rethinkdb import RethinkDB
-r = RethinkDB()
+#from rethinkdb import RethinkDB
+#r = RethinkDB()
 
 #FLOP
 import torchvision.models as models
@@ -85,6 +85,30 @@ import requests
 
 import time
 
+import subprocess
+import re
+
+def parse_uptime_output(output):
+    # Regex to capture the different components of uptime
+    uptime_regex = r"up\s+((\d+)\s+days?,\s+)?((\d+):(\d+)|(\d+)\s+min),.*"
+    match = re.search(uptime_regex, output)
+    if match:
+        days = match.group(2) or "0"
+        if match.group(3).find(":") > -1:
+            hours, minutes = match.group(4), match.group(5)
+        else:
+            hours, minutes = "0", match.group(6)
+
+        return f"{days} Days {hours} H {minutes} M"
+    return "Could not parse uptime information."
+
+def get_uptime():
+    try:
+        result = subprocess.run(["uptime"], capture_output=True, text=True, check=True)
+        return parse_uptime_output(result.stdout)
+    except subprocess.CalledProcessError as e:
+        return f"Failed to get uptime: {str(e)}"
+        
 #จำนวน GPU
 num_gpus=''
 
@@ -1050,8 +1074,8 @@ def check_uptime_node():
     global info_uptime_days , AUTH_KEY
     info_uptime_days = "Extracted from some uptime checking logic"  # Example value
 
-    check_uptime = get_uptime_days_hours()
-    
+    #check_uptime = get_uptime_days_hours()
+    check_uptime = get_uptime()
     #Call speed_test
     speeds_net = test_internet_speed()
     print(f"Download Speed: {speeds_net['network_down']} Mbps")
