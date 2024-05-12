@@ -734,8 +734,9 @@ def info():
         ram()
         gpu()
         flops()
-        check_uptime = get_uptime_days_hours()
-    
+        #check_uptime = get_uptime_days_hours()
+        check_uptime = get_uptime()
+        
         #Call speed_test
         speeds_net = test_internet_speed()
         print(f"Download Speed: {speeds_net['network_down']} Mbps")
