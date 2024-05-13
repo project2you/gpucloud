@@ -88,27 +88,7 @@ import time
 import subprocess
 import re
 
-def parse_uptime_output(output):
-    # Regex to capture the different components of uptime
-    uptime_regex = r"up\s+((\d+)\s+days?,\s+)?((\d+):(\d+)|(\d+)\s+min),.*"
-    match = re.search(uptime_regex, output)
-    if match:
-        days = match.group(2) or "0"
-        if match.group(3).find(":") > -1:
-            hours, minutes = match.group(4), match.group(5)
-        else:
-            hours, minutes = "0", match.group(6)
-
-        return f"{days} Days {hours} H {minutes} M"
-    return "Could not parse uptime information."
-
-def get_uptime():
-    try:
-        result = subprocess.run(["uptime"], capture_output=True, text=True, check=True)
-        return parse_uptime_output(result.stdout)
-    except subprocess.CalledProcessError as e:
-        return f"Failed to get uptime: {str(e)}"
-        
+ 
 #จำนวน GPU
 num_gpus=''
 
@@ -145,12 +125,8 @@ GRAFANA_API = os.environ.get('GRAFANA_API')  # e.g., 'http://192.168.1.41:3000/a
 GRAFANA_API_KEY = os.environ.get('GRAFANA_API_KEY')  # e.g., 'glsa_NQD7zrX3CwVAa2GkAeauNXugoehsWq7A_6db1cc87'
 HEADERS = {'Authorization': f'Bearer {GRAFANA_API_KEY}', 'Content-Type': 'application/json'}
 
-# ตอนนี้คุณสามารถใช้ os.environ.get เพื่อเข้าถึงตัวแปร
-secret_key = os.environ.get('SECRET_KEY')
-#print(secret_key)  # แสดงค่า SECRET_KEY
-
-# กำหนด auth key สำหรับการยืนยัน
-AUTH_KEY = secret_key #"579cea2aa57a71706f75cb687d68c5a022af2346b0f40d3318871ce86ba56898"
+# ตอนนี้คุณสามารถใช้ os.environ.get เพื่อเข้าถึงตัวแปร ใช้สำหรับ Auth VPN Server ในการรับส่งข้อมูล ระหว่าง Tail - Client
+AUTH_SERVER_KEY = os.environ.get('AUTH_SERVER_KEY')
 
 #For python docker sdk
 container_id =''
@@ -850,18 +826,36 @@ def docker_start():
 
         # ตรวจสอบ image จาก Docker Hub
         print("Pulling Jupyter Docker image...")
-        check_and_pull_image('project2you/jupyter-nvidia-gpuspeed:1.0')
-        
+        image_name = "project2you/jupyter-nvidia-gpuspeed:1.0"
+
+        check_and_pull_image(image_name)
+
         try:
-            # ตรวจสอบว่ามี container ที่มีชื่อนี้ทำงานอยู่หรือไม่
             container = client.containers.get(container_name)
             print(f"Container with name '{container_name}' already exists. Removing...")
-            container.remove(force=True)  # ลบ container ที่มีชื่อนี้ถ้ามันมีอยู่
+            container.remove(force=True)
+            print("Container removed successfully.")
         except docker.errors.NotFound:
             print(f"No existing container with name '{container_name}'. Proceeding to run a new one.")
+        except docker.errors.APIError as e:
+            if '409 Client Error' in str(e) and 'is already in progress' in str(e):
+                print(f"Removal of container '{container_name}' is already in progress. Retrying...")
+                time.sleep(10)  # Wait for 10 seconds before retrying
+                try:
+                    container = client.containers.get(container_name)
+                    container.remove(force=True)
+                    print("Container removed successfully after retry.")
+                except docker.errors.APIError as e:
+                    print(f"Failed to remove container after retry: {e}")
+                except docker.errors.NotFound:
+                    print(f"Container '{container_name}' no longer exists.")
+            else:
+                print(f"An error occurred: {e}")
 
-        # ต่อจากนี้คือโค้ดเพื่อรัน container ใหม่
-        image_name = "project2you/jupyter-nvidia-gpuspeed:1.0"
+        # Assuming you want to run a new container after the old one has been handled
+        print("Running a new container.")
+        container = client.containers.run(image_name, name=container_name, detach=True)
+        print(f"New container '{container_name}' started.")
 
         port_mapping = {'8888/tcp': port}
         
@@ -1040,31 +1034,6 @@ curl -X POST http://192.168.1.45:5001/uptime \
 # Create a scheduler instance
 scheduler = BackgroundScheduler()
 
-def get_uptime_days_hours():
-    # Run the uptime command and capture the output
-    result = subprocess.run(['uptime'], capture_output=True, text=True)
-    uptime_output = result.stdout.strip()
-    
-    # Adjusted pattern to match "X days, HH:MM"
-    pattern = r'up\s+(\d+)\s+days?,\s+(\d+):(\d+),'
-    match = re.search(pattern, uptime_output)
-    
-    if match:
-        days = match.group(1)  # Days directly captured
-        hours = match.group(2)  # Hours directly captured
-        minutes = int(match.group(3))  # Convert minutes to integer for rounding
-        
-        # Consider rounding up the hour if minutes are 30 or more
-        if minutes >= 30:
-            hours = str(int(hours) + 1) + " hours"
-        else:
-            hours = str(hours) + " hours"
-        
-        return f"{days} days {hours}"
-    else:
-        return "Uptime 0"
-
-
 #เช็คเวลาในการออนไลน์
 @app.route('/check_uptime',methods=['POST'])
 def check_uptime_node():
@@ -1072,11 +1041,13 @@ def check_uptime_node():
     # Example functionality of check_uptime
     logging.info("Uptime and performing to server.")
     
-    global info_uptime_days , AUTH_KEY
+    global info_uptime_days , AUTH_SERVER_KEY
     info_uptime_days = "Extracted from some uptime checking logic"  # Example value
 
     #check_uptime = get_uptime_days_hours()
     check_uptime = get_uptime()
+    print(check_uptime)
+    
     #Call speed_test
     speeds_net = test_internet_speed()
     print(f"Download Speed: {speeds_net['network_down']} Mbps")
@@ -1118,7 +1089,7 @@ def check_uptime_node():
     url = "https://tailscale.gpuspeed.net/uptime"
     headers = {
         "Content-Type": "application/json",
-        "Auth-Key": AUTH_KEY  # Replace with your actual AUTH_KEY
+        "Auth-Key": AUTH_SERVER_KEY  # Replace with your actual AUTH_KEY
     }
     
     disk_write_speed = round(write_speed, 2)
@@ -1144,6 +1115,8 @@ def check_uptime_node():
                 print("Success:", response.text)
             else:
                 print("Failed to post data:", response.status_code)
+                print(response)
+                
             return response.text
         except requests.RequestException as e:
             print("Request failed:", e)
@@ -1151,47 +1124,52 @@ def check_uptime_node():
     else:
         print("No valid data for 'network_down'")
         return "No valid data for 'network_down'"
-    
-    
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Interval in minutes for the scheduler
-SCHEDULE_INTERVAL = 5
+SCHEDULE_INTERVAL = 2
 
 # Create a scheduler instance
 scheduler = BackgroundScheduler()
 
-def get_uptime_days_hours():
-    """Run the uptime command and capture the output, returning formatted uptime."""
-    result = subprocess.run(['uptime'], capture_output=True, text=True)
-    uptime_output = result.stdout.strip()
-    pattern = r'up\s+(\d+)\s+days?,\s+(\d+):(\d+),'
-    match = re.search(pattern, uptime_output)
+def parse_uptime_output(output):
+    # Regex to capture the different components of uptime
+    uptime_regex = r"up\s+((\d+)\s+days?,\s+)?((\d+):(\d+)|(\d+)\s+min),.*"
+    match = re.search(uptime_regex, output)
     if match:
-        days = match.group(1)
-        hours = match.group(2)
-        minutes = int(match.group(3))
-        if minutes >= 30:
-            hours = str(int(hours) + 1) + " hours"
+        days = match.group(2) or "0"
+        if match.group(3).find(":") > -1:
+            hours, minutes = match.group(4), match.group(5)
         else:
-            hours = str(hours) + " hours"
-        return f"{days} days {hours}"
-    return "Uptime 0"
+            hours, minutes = "0", match.group(6)
 
+        return f"{days} Days {hours}:{minutes} Hours"
+    return "Could not parse uptime information."
+
+def get_uptime():
+    try:
+        result = subprocess.run(["uptime"], capture_output=True, text=True, check=True)
+        return parse_uptime_output(result.stdout)
+    except subprocess.CalledProcessError as e:
+        return f"Failed to get uptime: {str(e)}"
+       
 def schedule_uptime_task():
     """Schedules the uptime function to run at set intervals."""
     next_run_time = datetime.datetime.now() + datetime.timedelta(minutes=SCHEDULE_INTERVAL)
     scheduler.add_job(uptime, 'interval', minutes=SCHEDULE_INTERVAL, next_run_time=next_run_time, replace_existing=True, id='uptime_task')
     logging.info(f"Next uptime scheduled at {next_run_time.strftime('%Y-%m-%d %H:%M')}")
+    
+    print("Begin check_uptime_node")
     check_uptime_node()
-
+    print("End check_uptime_node")
+    
 def uptime():
     """Logs current uptime and schedules the next run."""
     current_time_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
     logging.info(f"Uptime function running at {current_time_str}")
-    uptime_info = get_uptime_days_hours()
+    uptime_info = get_uptime()
     logging.info(f"System Uptime: {uptime_info}")
     schedule_uptime_task()
 
