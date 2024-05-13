@@ -163,10 +163,23 @@ done
 gen_key=$(openssl rand -base64 32)
 
 # Save information in .env file
-# สร้างไฟล์ .env ใหม่หรือเขียนทับไฟล์เดิม (ใช้ > ในบรรทัดแรกเพื่อสร้างใหม่/เขียนทับ)
-echo "HOST=$new_hostname" > .env
+# ตรวจสอบและสร้างไฟล์ .env ถ้าไม่มีอยู่
+if [ ! -f ".env" ]; then
+    touch .env
+    echo "Created a new .env file."
+fi
 
-# เพิ่มข้อมูลเพิ่มเติมในไฟล์ .env (ใช้ >> เพื่อเพิ่มข้อมูลโดยไม่ลบข้อมูลเดิม)
+# ตรวจสอบสิทธิ์การเขียน
+if [ -w ".env" ]; then
+    echo "The .env file is writable."
+else
+    echo "The .env file is not writable. Checking permissions..."
+    ls -l .env
+    exit 1
+fi
+
+# เขียนข้อมูลและตรวจสอบผลลัพธ์
+echo "HOST=$new_hostname" > .env
 echo "NAME=$name" >> .env
 echo "EMAIL=$email" >> .env
 echo "PHONE=$phone" >> .env
@@ -174,9 +187,11 @@ echo "GEN_KEY=$gen_key" >> .env
 echo "PROMETHEUS_API=https://prometheus.gpuspeed.net/api/v1/targets" >> .env
 echo "GRAFANA_API=https://grafana.gpuspeed.net/api/dashboards/db" >> .env
 echo "GRAFANA_API_KEY=glsa_TsnvlyJlcKpDyOnH7NDcuTVX85QJDgEA_e7eee357" >> .env
-echo "SECRET_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MTU0ODcwMzQsImlhdCI6MTcxNTQwMDYzNH0.G6yHuOuVPlfQzUBDzCTgeMrtXlIDDVC7S9qs4R8CJws" >> .env
+echo "AUTH_SERVER_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MTU2NTI4NTksImlhdCI6MTcxNTU2NjQ1OX0.nDIfD03olcsqyNz0LgCYfRtlVvISTBY0jZ3470yJqOs" >> .env
 
-echo "Created or updated .env file with API configuration."
+echo "Updated .env file with new settings."
+
+
 
 # Change current hostname
 sudo hostnamectl set-hostname $new_hostname
