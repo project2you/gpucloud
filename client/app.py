@@ -5,6 +5,8 @@ import datetime
 
 import random
 
+import threading
+
 import time
 from flask import Flask, request, jsonify 
 
@@ -76,7 +78,6 @@ import requests_async as requests_asy
 
 import aiohttp
 import asyncio
-
 
 from urllib.request import urlopen
 from urllib.error import URLError
@@ -805,9 +806,7 @@ container_name = "gpuspeed"
 image_name = "project2you/jupyter-nvidia-gpuspeed:1.0"
 
 def remove_container_with_retry(container_name, max_retries=3, wait_seconds=5):
-    # สร้าง client สำหรับเชื่อมต่อกับ Docker daemon
     client = docker.from_env()
-
     retries = 0
     while retries < max_retries:
         try:
@@ -815,14 +814,19 @@ def remove_container_with_retry(container_name, max_retries=3, wait_seconds=5):
             container.remove(force=True)
             print(f"Container '{container_name}' removed successfully.")
             return True
+        except docker.errors.NotFound:
+            print(f"No such container: {container_name}")
+            return True  # เนื่องจากคอนเทนเนอร์ไม่มีอยู่แล้ว, ไม่จำเป็นต้องลบ
         except docker.errors.APIError as error:
             if 'removal of container' in str(error) and 'is already in progress' in str(error):
                 print(f"Removal of container '{container_name}' is already in progress. Retrying...")
                 time.sleep(wait_seconds)
                 retries += 1
             else:
+                print(f"Error encountered while removing container: {error}")
                 raise
     return False
+
 
 @app.route('/docker_start',methods=['POST','GET'])
 def docker_start():
@@ -832,6 +836,16 @@ def docker_start():
     auth_key = request.headers.get('Auth-Key')
     if not verify_auth_key(auth_key):
         return jsonify({"error": "Unauthorized"}), 401
+
+    if not request.json or 'container_name' not in request.json:
+        return jsonify({"error": "Request must include JSON with 'container_name', 'image_name', 'port', 'token', 'base_url'"}), 400
+
+    info_system = request.json
+
+    # เรียกใช้การตรวจสอบและลบคอนเทนเนอร์ที่มีอยู่
+    if not remove_container_with_retry(info_system['container_name']):
+        return jsonify({"error": "Failed to remove existing container after several retries."}), 500
+
 
     # ดำเนินการตามปกติถ้า auth key ถูกต้อง
     if request.method == 'POST':
@@ -911,8 +925,6 @@ def docker_start():
             print(f"Error encountered while creating container: {error}")
             return jsonify({"error": str(error)}), 500
         
-    
-
     # หากไม่มีปัญหา, ให้ container รันต่อแบบ detach
     #container.detach()
         # Create Dictionary
@@ -1163,49 +1175,42 @@ def parse_uptime_output(output):
             hours, minutes = match.group(4), match.group(5)
         else:
             hours, minutes = "0", match.group(6)
-
-        return f"{days} Days {hours} Hours {minutes} Minute"
+        
+        return f"{days} Days {hours} Hours {minutes} Minutes"
     return "Could not parse uptime information."
 
-def get_uptime():
+def get_uptime(callback=None):
     try:
         result = subprocess.run(["uptime"], capture_output=True, text=True, check=True)
         return parse_uptime_output(result.stdout)
     except subprocess.CalledProcessError as e:
+        uptime_info = f"Failed to get uptime: {str(e)}"
         return f"Failed to get uptime: {str(e)}"
-       
+    if callback:
+        callback(uptime_info)
+        
+def uptime():
+    """Logs current uptime and schedules the next run."""
+    current_time_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
+    logging.info(f"Uptime function running at {current_time_str}")
+    thread = threading.Thread(target=get_uptime, args=(log_uptime,))
+    thread.start()
+    schedule_uptime_task()
+
+def log_uptime(uptime_info):
+    """Callback function to log uptime info."""
+    logging.info(f"System Uptime: {uptime_info}")
+
 def schedule_uptime_task():
     """Schedules the uptime function to run at set intervals."""
     next_run_time = datetime.datetime.now() + datetime.timedelta(minutes=SCHEDULE_INTERVAL)
     scheduler.add_job(uptime, 'interval', minutes=SCHEDULE_INTERVAL, next_run_time=next_run_time, replace_existing=True, id='uptime_task')
     logging.info(f"Next uptime scheduled at {next_run_time.strftime('%Y-%m-%d %H:%M')}")
-    
+
     print("Begin check_uptime_node")
     check_uptime_node()
     print("End check_uptime_node")
     
-def uptime():
-    """Logs current uptime and schedules the next run."""
-    current_time_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
-    logging.info(f"Uptime function running at {current_time_str}")
-    uptime_info = get_uptime()
-    logging.info(f"System Uptime: {uptime_info}")
-    schedule_uptime_task()
-
-def safely_remove_job(job_id):
-    """Attempts to remove a scheduled job by ID."""
-    from apscheduler.jobstores.base import JobLookupError
-    try:
-        if scheduler.get_job(job_id):
-            scheduler.remove_job(job_id)
-            print(f"Job {job_id} removed successfully.")
-        else:
-            print(f"No job with ID {job_id} found.")
-    except JobLookupError as e:
-        print(f"Failed to find the job {job_id}. Error: {e}")
-    except Exception as e:
-        print(f"An error occurred: {e}")
-
 if __name__ == '__main__':
     scheduler.start()
     schedule_uptime_task()  # Initial scheduling
