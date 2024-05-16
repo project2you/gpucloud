@@ -187,7 +187,7 @@ echo "GEN_KEY=$gen_key" >> .env
 echo "PROMETHEUS_API=https://prometheus.gpuspeed.net/api/v1/targets" >> .env
 echo "GRAFANA_API=https://grafana.gpuspeed.net/api/dashboards/db" >> .env
 echo "GRAFANA_API_KEY=glsa_TsnvlyJlcKpDyOnH7NDcuTVX85QJDgEA_e7eee357" >> .env
-echo "AUTH_SERVER_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MTU2NTI4NTksImlhdCI6MTcxNTU2NjQ1OX0.nDIfD03olcsqyNz0LgCYfRtlVvISTBY0jZ3470yJqOs" >> .env
+echo "AUTH_SERVER_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MTU5MzU2MDEsImlhdCI6MTcxNTg0OTIwMX0.fMg5QiMcRsrAGdbQLXMMjE-Veq03NsOqNL2UdyiHWSE" >> .env
 
 echo "Updated .env file with new settings."
 
