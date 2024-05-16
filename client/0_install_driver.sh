@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export DEBIAN_FRONTEND=noninteractive
+
 # Define the file name
 FILE_NAME="1_check_driver.sh"
 
