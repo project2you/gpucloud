@@ -1227,3 +1227,4 @@ sudo systemctl status gpuspeed_client.service
 
 journalctl -u gpuspeed_client.service -f   
 '''
+
