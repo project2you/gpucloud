@@ -94,3 +94,4 @@ wsproto==0.15.0
 yarl==1.9.4
 zope.event==5.0
 zope.interface==6.3
+pynvml
