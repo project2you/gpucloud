@@ -98,7 +98,7 @@ fi
 
 #install Driver for example : 2060
 # Define the URL of the NVIDIA driver
-# 2060 
+# 2060 - 4090 
 NVIDIA_DRIVER_URL="https://us.download.nvidia.com/XFree86/Linux-x86_64/550.78/NVIDIA-Linux-x86_64-550.78.run"
 
 # Define the path where the driver will be downloaded
