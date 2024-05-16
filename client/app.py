@@ -3,6 +3,8 @@ import torch
 #from datetime import datetime , timedelta
 import datetime
 
+import pynvml
+
 import random
 
 import threading
@@ -650,7 +652,7 @@ def get_ip_address(ifname):
     except IOError:
         return 'Not available'
 
-
+#อันนี้ไม่ได้ใช้แล้ว
 def measure_gpu_speed(device='cuda:0'):
     N = 10**8  # ขนาดของเทนเซอร์ที่ใหญ่ขึ้น
     dtype = torch.float32
@@ -674,6 +676,35 @@ def measure_gpu_speed(device='cuda:0'):
     speed_gbps = data_size_gbits / time_taken
 
     return speed_gbps
+
+#ใช้ตัวนี้แทนนนนในการหารายละเอียด GPU SPEED
+def get_gpu_details():
+    pynvml.nvmlInit()
+    num_gpus = pynvml.nvmlDeviceGetCount()
+    bandwidths = []  # List to store the memory bandwidths formatted to two decimal places
+
+    for i in range(num_gpus):
+        handle = pynvml.nvmlDeviceGetHandleByIndex(i)
+        name = pynvml.nvmlDeviceGetName(handle)
+        
+        try:
+            memory_clock_speed = pynvml.nvmlDeviceGetClockInfo(handle, pynvml.NVML_CLOCK_MEM)
+            memory_bus_width = pynvml.nvmlDeviceGetMemoryBusWidth(handle)
+
+            # Calculate the memory bandwidth and format it to two decimal places
+            memory_bandwidth = (memory_clock_speed * memory_bus_width / 8) / 1024
+            formatted_bandwidth = f"{memory_bandwidth:.2f} GB/s"
+            bandwidths.append(formatted_bandwidth)  # Add the formatted bandwidth to the list
+
+        except pynvml.NVMLError as error:
+            print(f"Failed to get details for GPU {i} ({name}): {error}")
+            bandwidths.append("Error")  # Append "Error" if there was an error fetching details
+
+    pynvml.nvmlShutdown()
+    return bandwidths
+
+
+
 
 def test_internet_speed():
     try:
@@ -761,12 +792,31 @@ def info():
         info_gpu_flops = flops()
         print(f"GPU flops : {info_gpu_flops} TFLOPS")
 
-        info_gpu_speed = measure_gpu_speed()
-        print(f"GPU Speed : {info_gpu_speed:.2f} GB/s")
+        # Storing the bandwidths in a variable and printing them
+        gpu_bandwidths = get_gpu_details()
+        info_gpu_speed = str(gpu_bandwidths[0])
+        print(f"GPU Speed : {info_gpu_speed}")
 
         #ตัดคำวา่ Core (TM) ออก
         info_cpu_name = remove_words(info_cpu_name)
-        
+
+        if torch.cuda.is_available():
+            num_gpus = torch.cuda.device_count()
+            print(f"Number of GPUs: {num_gpus}")
+
+            for i in range(num_gpus):
+                gpu = torch.cuda.get_device_properties(i)
+                print(f"GPU ID: {i}, Name: {gpu.name}")
+                print(f"Total Memory: {gpu.total_memory / (1024**2)} MB")  # Convert from bytes to MB
+                print(f"Multiprocessors (Cores): {gpu.multi_processor_count}")
+
+            total_memory_mb = gpu.total_memory / (1024**2)  # example value in MB
+            gpu_mem = round(total_memory_mb / 1024)  # convert MB to GB and round
+            print(f"Total Memory: {gpu_mem} GB")
+        else:
+            gpu_mem = "0"
+            print("No GPUs")
+            
         #ตัดเอาเฉพาะชชื่อเบรนของ CPU อย่างเดียว ซซึ่งบางทีจะมีคำว่า AMD Ryzen 5 4600G with Radeon Graphics
         info_system = {
             "cpu_model": f"{info_cpu_name}",
@@ -777,7 +827,7 @@ def info():
             "ram_mem": str(info_ram_total),
             "gpu_model": f"{num_gpus}X {info_gpu_name}",
             "gpu_cuda": str(info_gpu_cuda),
-            "gpu_mem": str(f"{info_gpu_total_memory}"),
+            "gpu_mem": str(f"{gpu_mem} GB"),
             "gpu_speed": str(f"{info_gpu_speed:.2f}") +' GB/s',
             "gpu_tflops" : info_gpu_flops,
             "region": str(get_location()),
@@ -1122,9 +1172,27 @@ def check_uptime_node():
     info_gpu_flops = flops()
     print(f"GPU flops : {info_gpu_flops} TFLOPS")
 
-    info_gpu_speed = measure_gpu_speed()
-    info_gpu_speed = math.floor(info_gpu_speed) #ตัดให้เป็นจำนวนเต็ม เช่น 25.82 จะได้ 25
-    print(f"GPU Speed : {info_gpu_speed:.2f} GB/s")
+    if torch.cuda.is_available():
+        num_gpus = torch.cuda.device_count()
+        print(f"Number of GPUs: {num_gpus}")
+
+        for i in range(num_gpus):
+            gpu = torch.cuda.get_device_properties(i)
+            print(f"GPU ID: {i}, Name: {gpu.name}")
+            print(f"Total Memory: {gpu.total_memory / (1024**2)} MB")  # Convert from bytes to MB
+            print(f"Multiprocessors (Cores): {gpu.multi_processor_count}")
+
+        total_memory_mb = gpu.total_memory / (1024**2)  # example value in MB
+        gpu_mem = round(total_memory_mb / 1024)  # convert MB to GB and round
+        print(f"Total Memory: {gpu_mem} GB")
+    else:
+        gpu_mem = "0"
+        print("No GPUs")
+            
+    # Storing the bandwidths in a variable and printing them
+    gpu_bandwidths = get_gpu_details()
+    info_gpu_speed = str(gpu_bandwidths[0])
+    print(f"GPU Speed : {info_gpu_speed}")
     
     interface_name = 'tailscale0'
     ip_address = get_ip_address(interface_name)
@@ -1140,7 +1208,8 @@ def check_uptime_node():
     data = {
         'online_duration' : check_uptime ,
         'ip': ip_address,
-        'gpu_mem': str(info_gpu_speed)+" GB" ,
+        'gpu_mem': str(gpu_mem)+" GB" ,
+        'gpu_speed' : info_gpu_speed,
         'network_down': speeds_net['network_down'],  # สมมติว่าได้ค่า download speed 50.5 Mbps
         'network_up': speeds_net['network_up'],    # สมมติว่าได้ค่า upload speed 10.2 Mbps
         'num_gpus' : num_gpus,
