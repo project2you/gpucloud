@@ -89,7 +89,8 @@ import time
 import subprocess
 import re
 
- 
+import math
+
 #จำนวน GPU
 num_gpus=''
 
@@ -689,6 +690,14 @@ def test_internet_speed():
 
 #เริ่มต้นในส่วนของการดึงค่า Infomation ของ Client ต่าง ๆ ออกมาแสดง 
 #เพื่อส่งกลับไปที่ Tail.py :5001
+
+#ตัดคำบางคำที่ไม่ต้องการ 
+def remove_words(text):
+    unwanted_words = ["(R)", "Core", "(TM)" ,"GB"]
+    for word in unwanted_words:
+        text = text.replace(word, "")
+    return text
+
 @app.route('/info',methods=['POST','GET'])
 def info():
     global info_cpu_model , info_cpu_core , info_cpu_brand , info_cpu_name , info_cpu_speed , info_ram_total
@@ -755,6 +764,8 @@ def info():
         info_gpu_speed = measure_gpu_speed()
         print(f"GPU Speed : {info_gpu_speed:.2f} GB/s")
 
+        #ตัดคำวา่ Core (TM) ออก
+        info_cpu_name = remove_words(info_cpu_name)
         
         #ตัดเอาเฉพาะชชื่อเบรนของ CPU อย่างเดียว ซซึ่งบางทีจะมีคำว่า AMD Ryzen 5 4600G with Radeon Graphics
         info_system = {
@@ -766,7 +777,7 @@ def info():
             "ram_mem": str(info_ram_total),
             "gpu_model": f"{num_gpus}X {info_gpu_name}",
             "gpu_cuda": str(info_gpu_cuda),
-            "gpu_mem": str(info_gpu_total_memory),
+            "gpu_mem": str(f"{info_gpu_total_memory}"),
             "gpu_speed": str(f"{info_gpu_speed:.2f}") +' GB/s',
             "gpu_tflops" : info_gpu_flops,
             "region": str(get_location()),
@@ -978,7 +989,6 @@ def docker_stop():
         
     return jsonify({"data": "success"})
 
-
 def create_full_dashboard_for_node(node):
     """Create a comprehensive dashboard for a given node."""
     dashboard_json = {
@@ -1113,6 +1123,7 @@ def check_uptime_node():
     print(f"GPU flops : {info_gpu_flops} TFLOPS")
 
     info_gpu_speed = measure_gpu_speed()
+    info_gpu_speed = math.floor(info_gpu_speed) #ตัดให้เป็นจำนวนเต็ม เช่น 25.82 จะได้ 25
     print(f"GPU Speed : {info_gpu_speed:.2f} GB/s")
     
     interface_name = 'tailscale0'
@@ -1128,7 +1139,8 @@ def check_uptime_node():
 
     data = {
         'online_duration' : check_uptime ,
-         "ip": ip_address,
+        'ip': ip_address,
+        'gpu_mem': str(info_gpu_speed)+" GB" ,
         'network_down': speeds_net['network_down'],  # สมมติว่าได้ค่า download speed 50.5 Mbps
         'network_up': speeds_net['network_up'],    # สมมติว่าได้ค่า upload speed 10.2 Mbps
         'num_gpus' : num_gpus,
