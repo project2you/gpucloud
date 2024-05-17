@@ -178,6 +178,15 @@ else
     exit 1
 fi
 
+URL="https://tailscale.gpuspeed.net/genkey_client"
+data=$(curl -s $URL)
+
+# Check if data was retrieved
+if [ -z "$data" ]; then
+    echo "Could not retrieve data from $URL. Exiting."
+    exit 1
+fi
+
 # เขียนข้อมูลและตรวจสอบผลลัพธ์
 echo "HOST=$new_hostname" > .env
 echo "NAME=$name" >> .env
@@ -187,11 +196,8 @@ echo "GEN_KEY=$gen_key" >> .env
 echo "PROMETHEUS_API=https://prometheus.gpuspeed.net/api/v1/targets" >> .env
 echo "GRAFANA_API=https://grafana.gpuspeed.net/api/dashboards/db" >> .env
 echo "GRAFANA_API_KEY=glsa_TsnvlyJlcKpDyOnH7NDcuTVX85QJDgEA_e7eee357" >> .env
-echo "AUTH_SERVER_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MTU5MzU2MDEsImlhdCI6MTcxNTg0OTIwMX0.fMg5QiMcRsrAGdbQLXMMjE-Veq03NsOqNL2UdyiHWSE" >> .env
-
+echo "AUTH_SERVER_KEY=$data" >> .env
 echo "Updated .env file with new settings."
-
-
 
 # Change current hostname
 sudo hostnamectl set-hostname $new_hostname
