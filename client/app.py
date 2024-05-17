@@ -724,7 +724,7 @@ def test_internet_speed():
 
 #ตัดคำบางคำที่ไม่ต้องการ 
 def remove_words(text):
-    unwanted_words = ["(R)", "Core", "(TM)" ,"GB"]
+    unwanted_words = ["(R)", "Core", "(TM)" ,"GB" , "processor"]
     for word in unwanted_words:
         text = text.replace(word, "")
     return text
@@ -797,7 +797,7 @@ def info():
         info_gpu_speed = str(gpu_bandwidths[0])
         print(f"GPU Speed : {info_gpu_speed}")
 
-        #ตัดคำวา่ Core (TM) ออก
+        #ตัดคำวา่ Core (TM) , processor ออก
         info_cpu_name = remove_words(info_cpu_name)
 
         if torch.cuda.is_available():
@@ -1128,6 +1128,8 @@ scheduler = BackgroundScheduler()
 #เช็คเวลาในการออนไลน์
 @app.route('/check_uptime',methods=['POST'])
 def check_uptime_node():
+    global info_cpu_name
+    
     print("Check uptime")
     # Example functionality of check_uptime
     logging.info("Uptime and performing to server.")
@@ -1139,6 +1141,10 @@ def check_uptime_node():
     check_uptime = get_uptime()
     print(check_uptime)
     
+    #CPU
+    #ตัดคำวา่ Core (TM) , processor ออก
+    info_cpu_name = remove_words(info_cpu_name)
+
     #Call speed_test
     speeds_net = test_internet_speed()
     print(f"Download Speed: {speeds_net['network_down']} Mbps")
@@ -1208,6 +1214,7 @@ def check_uptime_node():
     data = {
         'online_duration' : check_uptime ,
         'ip': ip_address,
+        'cpu_model' : info_cpu_name,
         'gpu_mem': str(gpu_mem)+" GB" ,
         'gpu_speed' : info_gpu_speed,
         'network_down': speeds_net['network_down'],  # สมมติว่าได้ค่า download speed 50.5 Mbps
