@@ -407,13 +407,9 @@ def cpu():
     #for i, percentage in enumerate(psutil.cpu_percent(percpu=True, interval=1)):
     #    print(f"Core {i}: {percentage}%")
     #print(f"Total CPU Usage: {psutil.cpu_percent()}%")
-
     info_cpu_brand = str(cpuinfo.get_cpu_info()['brand_raw'])
-  
     cpu_name = info_cpu_brand.split("with")
-    
     info_cpu_name =  cpu_name[0] 
-      
     '''
     r.db('whirldata').table("list_gpu").insert({'cpu_model':info_system['cpu_model'],
                                                     'cpu_core':info_system['cpu_core'],
@@ -1143,6 +1139,10 @@ def check_uptime_node():
     
     #CPU
     #ตัดคำวา่ Core (TM) , processor ออก
+    info_cpu_brand = str(cpuinfo.get_cpu_info()['brand_raw'])
+    cpu_name = info_cpu_brand.split("with")
+    info_cpu_name =  cpu_name[0] 
+    
     info_cpu_name = remove_words(info_cpu_name)
 
     #Call speed_test
@@ -1315,4 +1315,3 @@ sudo systemctl status gpuspeed_client.service
 
 journalctl -u gpuspeed_client.service -f   
 '''
-
