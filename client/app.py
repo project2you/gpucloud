@@ -857,7 +857,6 @@ def check_and_pull_image(image_name):
         pulled_image = client.images.pull(image_name)
         print(f"Pulled: {pulled_image.tags}")
 
-
 container_name = "gpuspeed"
 # กำหนดชื่อ image ที่ต้องการใช้สร้าง container
 image_name = "project2you/jupyter-nvidia-gpuspeed:1.0"
@@ -883,7 +882,6 @@ def remove_container_with_retry(container_name, max_retries=3, wait_seconds=5):
                 print(f"Error encountered while removing container: {error}")
                 raise
     return False
-
 
 @app.route('/docker_start',methods=['POST','GET'])
 def docker_start():
@@ -938,11 +936,26 @@ def docker_start():
             print(f"Error encountered while removing existing container: {error}")
             return jsonify({"error": str(error)}), 500
         
-
         try:
-                # สร้าง container ใหม่
+            # สร้าง container ใหม่
             port_mapping = {'8888/tcp': port}
             
+            # พารามิตเตอร์สำหรับการรันคอนเทนเนอร์
+            container_name = container_name
+            image_name = image_name
+            ports = {'8888/tcp': 8888}
+            environment_vars = {'JUPYTER_TOKEN': token , 'BASE_URL': base_url }
+
+            # สร้างและรันคอนเทนเนอร์
+            container = client.containers.run(image_name, 
+                                            name=container_name, 
+                                            ports=ports, 
+                                            environment=environment_vars,
+                                            detach=True)
+
+            print(f'Container {container_name} is running with ID: {container.id}')
+
+            '''
             # กำหนดค่า Command สำหรับ Jupyter Notebook
             command = [
                 "jupyter", "lab",
@@ -969,7 +982,9 @@ def docker_start():
             # แสดงค่า container
             container_id = container.id
             print(f"Jupyter Notebook is running in container {container.id}")
-
+            '''
+            
+        
             # ตรวจสอบสถานะของ container สำหรับช่วงเวลาหนึ่ง (เช่น 5 วินาที)
             time.sleep(15) # รอประมาณ 10-15 วิ ในการสร้าง Instance เพื่อให้ container ได้เริ่มการทำงาน
             logs = container.logs().decode("utf-8")
@@ -1203,11 +1218,12 @@ def check_uptime_node():
     interface_name = 'tailscale0'
     ip_address = get_ip_address(interface_name)
     url = "https://tailscale.gpuspeed.net/uptime"
+    
     headers = {
         "Content-Type": "application/json",
-        "Auth-Key": AUTH_SERVER_KEY  # Replace with your actual AUTH_KEY
+        "Authorization": "Bearer " + str(AUTH_SERVER_KEY)
     }
-    
+
     disk_write_speed = round(write_speed, 2)
     disk_read_speed = round(read_speed, 2)
 
@@ -1315,3 +1331,4 @@ sudo systemctl status gpuspeed_client.service
 
 journalctl -u gpuspeed_client.service -f   
 '''
+
