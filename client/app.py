@@ -1264,7 +1264,7 @@ def check_uptime_node():
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Interval in minutes for the scheduler
-SCHEDULE_INTERVAL = 2
+SCHEDULE_INTERVAL = 60
 
 # Create a scheduler instance
 scheduler = BackgroundScheduler()
