@@ -144,6 +144,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 app = Flask(__name__)
 
+client = docker.from_env()
+
 #################################################################################################
 
 def get_hostname():
@@ -844,10 +846,8 @@ def info():
         print(info_system)
         return jsonify(info_system), 200
 
-
 def check_and_pull_image(image_name):
-    client = docker.from_env()
-
+    
     # ตรวจสอบว่ามี image นี้หรือไม่
     images = client.images.list()
     if any(image_name in tag for image in images for tag in image.tags):
@@ -883,7 +883,41 @@ def remove_container_with_retry(container_name, max_retries=3, wait_seconds=5):
                 raise
     return False
 
-@app.route('/docker_start',methods=['POST','GET'])
+
+# ฟังก์ชันเพื่อสร้างและรัน Docker container
+
+def warm_up_notebook():
+    """ Function to simulate long-running startup tasks. """
+    try:
+        time.sleep(10)  # Simulate the time taken to preload data
+        logging.info("Notebook environment is pre-warmed and ready.")
+    except Exception as e:
+        logging.error(f"Error during warming up: {str(e)}")
+
+def spawn_container(container_name, image_name, port, token, base_url):
+    """ Function to create and run a Docker container for Jupyter. """
+    try:
+        port_mapping = {'8888/tcp': port}
+        volume_mapping = {'/path_on_host': {'bind': '/path_in_container', 'mode': 'rw'}}
+        environment_vars = {'JUPYTER_TOKEN': token, 'BASE_URL': base_url}
+        
+        container = client.containers.run(image_name,
+                                          name=container_name,
+                                          ports=port_mapping,
+                                          volumes=volume_mapping,
+                                          environment=environment_vars,
+                                          detach=True)
+        logging.info(f'Container {container_name} is running with ID: {container.id}')
+        
+        # Start the background thread when the container starts
+        threading.Thread(target=warm_up_notebook).start()
+
+        return container
+    except docker.errors.APIError as error:
+        logging.error(f"Error encountered while creating container: {error}")
+        return None
+
+@app.route('/docker_start', methods=['POST','GET'])
 def docker_start():
     global container_name
     
@@ -901,112 +935,52 @@ def docker_start():
     if not remove_container_with_retry(info_system['container_name']):
         return jsonify({"error": "Failed to remove existing container after several retries."}), 500
 
-
     # ดำเนินการตามปกติถ้า auth key ถูกต้อง
     if request.method == 'POST':
         # ทำอะไรสักอย่างกับข้อมูลที่รับมา
         info_system = request.json  # ได้ dictionary จาก JSON โดยอัตโนมัติ
 
         # กำหนดค่า image, port และ token
-        container_name = info_system['container_name'] 
+        container_name = info_system['container_name']
         image_name = info_system['image_name']
         port = info_system['port']
         token = info_system['token']
         base_url = info_system['base_url']
 
-        # สร้าง client สำหรับเชื่อมต่อกับ Docker daemon
-        client = docker.from_env()
-
         # ตรวจสอบ image จาก Docker Hub
         print("Pulling Jupyter Docker image...")
-
         check_and_pull_image(image_name)
 
-        if not remove_container_with_retry(container_name):
-            return jsonify({"error": "Failed to remove existing container after several retries."}), 500
+        #if not remove_container_with_retry(container_name):
+        #    return jsonify({"error": "Failed to remove existing container after several retries."}), 500
+
+        # สร้าง container ใหม่
+        container = spawn_container(container_name, image_name, port, token, base_url)
+        if container is None:
+            return jsonify({"error": "Failed to create container."}), 500
 
         try:
-            # ตรวจสอบว่ามี container ที่มีชื่อนี้อยู่หรือไม่ และลบถ้ามี
-            container = client.containers.get(container_name)
-            container.remove(force=True)
-            print(f"Removed existing container with name '{container_name}'.")
-        except docker.errors.NotFound:
-            print(f"No existing container named '{container_name}'. Proceeding to create one.")
-        except docker.errors.APIError as error:
-            print(f"Error encountered while removing existing container: {error}")
-            return jsonify({"error": str(error)}), 500
-        
-        try:
-            # สร้าง container ใหม่
-            port_mapping = {'8888/tcp': port}
-            
-            # พารามิตเตอร์สำหรับการรันคอนเทนเนอร์
-            container_name = container_name
-            image_name = image_name
-            ports = {'8888/tcp': 8888}
-            environment_vars = {'JUPYTER_TOKEN': token , 'BASE_URL': base_url }
-
-            # สร้างและรันคอนเทนเนอร์
-            container = client.containers.run(image_name, 
-                                            name=container_name, 
-                                            ports=ports, 
-                                            environment=environment_vars,
-                                            detach=True)
-
-            print(f'Container {container_name} is running with ID: {container.id}')
-
-            '''
-            # กำหนดค่า Command สำหรับ Jupyter Notebook
-            command = [
-                "jupyter", "lab",
-                "--ip='*'", 
-                "--port="+str(port), 
-                "--no-browser", 
-                "--allow-root", 
-                "--NotebookApp.token="+str(token), 
-                "--NotebookApp.base_url="+str(base_url)
-            ]
-
-            # สร้างและรัน container
-            container = client.containers.run(
-                image_name,
-                command=command,
-                ports=port_mapping,
-                name=container_name,  # ตั้งชื่อ container
-                runtime="nvidia",
-                detach=True
-            )
-            
-            print("รัน container....")
-
-            # แสดงค่า container
-            container_id = container.id
-            print(f"Jupyter Notebook is running in container {container.id}")
-            '''
-            
-        
-            # ตรวจสอบสถานะของ container สำหรับช่วงเวลาหนึ่ง (เช่น 5 วินาที)
-            time.sleep(15) # รอประมาณ 10-15 วิ ในการสร้าง Instance เพื่อให้ container ได้เริ่มการทำงาน
+            # ตรวจสอบสถานะของ container สำหรับช่วงเวลาหนึ่ง (เช่น 15 วินาที)
+            #time.sleep(15)  # รอประมาณ 10-15 วินาทีเพื่อให้ container เริ่มทำงาน
             logs = container.logs().decode("utf-8")
 
             print("Jupyter Notebook กำลังรัน")
             print(f"เข้าถึงได้ที่: http://localhost:{port}{base_url}/?token={token}")
 
-            return jsonify({"message": "Container successfully."}), 200
+            return jsonify({"message": "Container started successfully."}), 200
         except docker.errors.APIError as error:
             print(f"Error encountered while creating container: {error}")
             return jsonify({"error": str(error)}), 500
-        
-    # หากไม่มีปัญหา, ให้ container รันต่อแบบ detach
-    #container.detach()
-        # Create Dictionary
+
+    # Create Dictionary
     value = {
         "data": "success",
     }
- 
+
     # Dictionary to JSON Object using dumps() method
     # Return JSON Object
     return json.dumps(value)
+
     
 # สมมติว่ามีฟังก์ชันสำหรับตรวจสอบ auth key
 def verify_auth_key(key):
@@ -1264,7 +1238,7 @@ def check_uptime_node():
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Interval in minutes for the scheduler
-SCHEDULE_INTERVAL = 60
+SCHEDULE_INTERVAL = 15
 
 # Create a scheduler instance
 scheduler = BackgroundScheduler()
