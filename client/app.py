@@ -134,7 +134,9 @@ AUTH_SERVER_KEY = os.environ.get('AUTH_SERVER_KEY')
 
 #For python docker sdk
 container_id =''
-container_name = "gpucloud"  # ชื่อ container ที่คุณต้องการตรวจสอบและรัน
+container_name = "gpuspeed"
+# กำหนดชื่อ image ที่ต้องการใช้สร้าง container
+image_name = "project2you/jupyter-nvidia-gpuspeed:1.0"
 
 import logging
 
@@ -857,10 +859,6 @@ def check_and_pull_image(image_name):
         pulled_image = client.images.pull(image_name)
         print(f"Pulled: {pulled_image.tags}")
 
-container_name = "gpuspeed"
-# กำหนดชื่อ image ที่ต้องการใช้สร้าง container
-image_name = "project2you/jupyter-nvidia-gpuspeed:1.0"
-
 def remove_container_with_retry(container_name, max_retries=3, wait_seconds=5):
     client = docker.from_env()
     retries = 0
@@ -893,9 +891,8 @@ def warm_up_notebook():
         logging.info("Notebook environment is pre-warmed and ready.")
     except Exception as e:
         logging.error(f"Error during warming up: {str(e)}")
-
 def spawn_container(container_name, image_name, port, token, base_url):
-    """ Function to create and run a Docker container for Jupyter. """
+    """ Function to create and run a Docker container for Jupyter with GPU support. """
     try:
         port_mapping = {'8888/tcp': port}
         volume_mapping = {'/path_on_host': {'bind': '/path_in_container', 'mode': 'rw'}}
@@ -906,7 +903,14 @@ def spawn_container(container_name, image_name, port, token, base_url):
                                           ports=port_mapping,
                                           volumes=volume_mapping,
                                           environment=environment_vars,
-                                          detach=True)
+                                          detach=True,
+                                          runtime="nvidia",
+                                          device_requests=[
+                                              docker.types.DeviceRequest(
+                                                  count=-1,
+                                                  capabilities=[['gpu']]
+                                              )
+                                          ])
         logging.info(f'Container {container_name} is running with ID: {container.id}')
         
         # Start the background thread when the container starts
@@ -916,6 +920,7 @@ def spawn_container(container_name, image_name, port, token, base_url):
     except docker.errors.APIError as error:
         logging.error(f"Error encountered while creating container: {error}")
         return None
+    
 
 @app.route('/docker_start', methods=['POST','GET'])
 def docker_start():
@@ -951,17 +956,14 @@ def docker_start():
         print("Pulling Jupyter Docker image...")
         check_and_pull_image(image_name)
 
-        #if not remove_container_with_retry(container_name):
-        #    return jsonify({"error": "Failed to remove existing container after several retries."}), 500
-
         # สร้าง container ใหม่
         container = spawn_container(container_name, image_name, port, token, base_url)
         if container is None:
             return jsonify({"error": "Failed to create container."}), 500
 
         try:
-            # ตรวจสอบสถานะของ container สำหรับช่วงเวลาหนึ่ง (เช่น 15 วินาที)
-            #time.sleep(15)  # รอประมาณ 10-15 วินาทีเพื่อให้ container เริ่มทำงาน
+            # จริง ๆ ตอนนี้มันทำงานแล้ว แต่อยากให้ User ดูสถานะ Waiting...สัก 5 วิ
+            #time.sleep(3)  # รอประมาณ 3 วินาทีเพื่อให้ ส่งการตอบกลับไปยัง User 
             logs = container.logs().decode("utf-8")
 
             print("Jupyter Notebook กำลังรัน")
@@ -1289,13 +1291,34 @@ def schedule_uptime_task():
     check_uptime_node()
     print("End check_uptime_node")
     
-if __name__ == '__main__':
+def initial_setup():
+    # ตั้งค่าเริ่มต้นที่อาจใช้เวลานาน
+    time.sleep(10)  # แสดงการทำงานที่ใช้เวลานาน
+    print("Initial setup complete.")
+
+def run_scheduler():
     scheduler.start()
     schedule_uptime_task()  # Initial scheduling
     try:
-        app.run(host='0.0.0.0', port=5002, use_reloader=False)
+        while True:
+            time.sleep(1)
     except (KeyboardInterrupt, SystemExit):
         scheduler.shutdown()
+
+def run_flask_app():
+    time.sleep(5)  # รอให้ scheduler ตั้งค่าเรียบร้อย
+    app.run(host='0.0.0.0', port=5002, use_reloader=False)
+
+if __name__ == '__main__':
+    initial_thread = threading.Thread(target=initial_setup, daemon=True)
+    scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
+    flask_thread = threading.Thread(target=run_flask_app)
+
+    initial_thread.start()
+    initial_thread.join()  # รอจนกว่า initial setup จะเสร็จ
+    scheduler_thread.start()
+    flask_thread.start()
+    
 
 '''
 sudo nano /etc/systemd/system/gpuspeed_client.service
