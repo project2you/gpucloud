@@ -1246,59 +1246,46 @@ SCHEDULE_INTERVAL = 15
 scheduler = BackgroundScheduler()
 
 def parse_uptime_output(output):
-    # Regex to capture the different components of uptime
     uptime_regex = r"up\s+((\d+)\s+days?,\s+)?((\d+):(\d+)|(\d+)\s+min),.*"
     match = re.search(uptime_regex, output)
     if match:
         days = match.group(2) or "0"
-        if match.group(3).find(":") > -1:
-            hours, minutes = match.group(4), match.group(5)
-        else:
-            hours, minutes = "0", match.group(6)
-        
+        hours, minutes = (match.group(4), match.group(5)) if match.group(3).find(":") > -1 else ("0", match.group(6))
         return f"{days} Days {hours} Hours {minutes} Minutes"
     return "Could not parse uptime information."
 
 def get_uptime(callback=None):
     try:
         result = subprocess.run(["uptime"], capture_output=True, text=True, check=True)
-        return parse_uptime_output(result.stdout)
+        uptime_info = parse_uptime_output(result.stdout)
+        if callback:
+            callback(uptime_info)
     except subprocess.CalledProcessError as e:
         uptime_info = f"Failed to get uptime: {str(e)}"
-        return f"Failed to get uptime: {str(e)}"
-    if callback:
-        callback(uptime_info)
-        
+        if callback:
+            callback(uptime_info)
+
+def log_uptime(uptime_info):
+    logging.info(f"System Uptime: {uptime_info}")
+
 def uptime():
-    """Logs current uptime and schedules the next run."""
-    current_time_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
-    logging.info(f"Uptime function running at {current_time_str}")
+    logging.info(f"Uptime function running at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}")
     thread = threading.Thread(target=get_uptime, args=(log_uptime,))
     thread.start()
     schedule_uptime_task()
 
-def log_uptime(uptime_info):
-    """Callback function to log uptime info."""
-    logging.info(f"System Uptime: {uptime_info}")
-
 def schedule_uptime_task():
-    """Schedules the uptime function to run at set intervals."""
     next_run_time = datetime.datetime.now() + datetime.timedelta(minutes=SCHEDULE_INTERVAL)
-    scheduler.add_job(uptime, 'interval', minutes=SCHEDULE_INTERVAL, next_run_time=next_run_time, replace_existing=True, id='uptime_task')
+    scheduler.add_job(uptime, 'date', next_run_time=next_run_time, replace_existing=True, id='uptime_task')
     logging.info(f"Next uptime scheduled at {next_run_time.strftime('%Y-%m-%d %H:%M')}")
 
-    print("Begin check_uptime_node")
-    check_uptime_node()
-    print("End check_uptime_node")
-    
 def initial_setup():
-    # ตั้งค่าเริ่มต้นที่อาจใช้เวลานาน
-    time.sleep(10)  # แสดงการทำงานที่ใช้เวลานาน
-    print("Initial setup complete.")
+    time.sleep(10)  # Simulate a long setup process
+    logging.info("Initial setup complete.")
 
 def run_scheduler():
     scheduler.start()
-    schedule_uptime_task()  # Initial scheduling
+    uptime()  # Initial call to schedule the first task
     try:
         while True:
             time.sleep(1)
@@ -1306,7 +1293,9 @@ def run_scheduler():
         scheduler.shutdown()
 
 def run_flask_app():
-    time.sleep(5)  # รอให้ scheduler ตั้งค่าเรียบร้อย
+    from flask import Flask
+    app = Flask(__name__)
+    time.sleep(5)  # Wait for the scheduler setup to complete
     app.run(host='0.0.0.0', port=5002, use_reloader=False)
 
 if __name__ == '__main__':
@@ -1315,9 +1304,10 @@ if __name__ == '__main__':
     flask_thread = threading.Thread(target=run_flask_app)
 
     initial_thread.start()
-    initial_thread.join()  # รอจนกว่า initial setup จะเสร็จ
+    initial_thread.join()  # Wait for the initial setup to complete
     scheduler_thread.start()
     flask_thread.start()
+    
     
 
 '''
@@ -1325,6 +1315,7 @@ sudo nano /etc/systemd/system/gpuspeed_client.service
 sudo systemctl enable gpuspeed_client.service
 sudo systemctl restart gpuspeed_client.service
 sudo systemctl status gpuspeed_client.service
+sudo systemctl stop gpuspeed_client.service
 
 journalctl -u gpuspeed_client.service -f   
 '''
