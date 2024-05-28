@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  rethinkdb1:
+    image: rethinkdb:2.4
+    volumes:
+      - rethinkdb_data1:/data
+    networks:
+      rethinkdb_net:
+        aliases:
+          - rethinkdb1
+    ports:
+      - "8081:8080"  # Web UI
+      - "28016:28015"  # Driver connections
+      - "29016:29015"  # Cluster connections
+    command: rethinkdb --bind all --join rethinkdb2:29015 --join rethinkdb3:29015
+
+  rethinkdb2:
+    image: rethinkdb:2.4
+    volumes:
+      - rethinkdb_data2:/data
+    networks:
+      rethinkdb_net:
+        aliases:
+          - rethinkdb2
+    ports:
+      - "8082:8080"  # Web UI
+      - "28017:28015"  # Driver connections
+      - "29017:29015"  # Cluster connections
+    command: rethinkdb --bind all --join rethinkdb1:29015 --join rethinkdb3:29015
+
+  rethinkdb3:
+    image: rethinkdb:2.4
+    volumes:
+      - rethinkdb_data3:/data
+    networks:
+      rethinkdb_net:
+        aliases:
+          - rethinkdb3
+    ports:
+      - "8083:8080"  # Web UI
+      - "28018:28015"  # Driver connections
+      - "29018:29015"  # Cluster connections
+    command: rethinkdb --bind all --join rethinkdb1:29015 --join rethinkdb2:29015
+
+volumes:
+  rethinkdb_data1:
+  rethinkdb_data2:
+  rethinkdb_data3:
+
+networks:
+  rethinkdb_net:
+    driver: overlay
