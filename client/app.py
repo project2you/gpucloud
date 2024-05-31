@@ -3,6 +3,10 @@ import torch
 #from datetime import datetime , timedelta
 import datetime
 
+import atexit
+import signal
+
+
 import pynvml
 
 import random
@@ -328,55 +332,6 @@ def get_size(bytes, suffix="B"):
     data = request.args['date_time']
     data = request.args['rent_status']
     
-@app.route('/gpu',methods=['POST','GET'])
-def gpu():
-        #GPU
-    global list_gpus , info_gpu_total_memory , info_gpu_cuda , info_gpu_name , info_gpu_speed 
-    
-    print("="*40, "GPU Details", "="*40)
-    gpus = GPUtil.getGPUs()
-
-    for gpu in gpus:
-        # get the GPU id
-        gpu_id = gpu.id
-        # name of GPU
-        info_gpu_name = gpu.name
-        # get % percentage of GPU usage of that GPU
-        gpu_load = f"{gpu.load*100}%"
-        # get free memory in MB format
-        gpu_free_memory = f"{gpu.memoryFree / 1024} GB"
-        # get used memory
-        gpu_used_memory = f"{gpu.memoryUsed / 1024} GB"
-        # get total memory
-        info_gpu_total_memory = f"{gpu.memoryTotal / 1024} GB"
-
-        # get GPU temperature in Celsius
-        gpu_temperature = f"{gpu.temperature} °C"
-        gpu_uuid = gpu.uuid
-        info_gpu_cuda = torch.version.cuda
-    
-        list_gpus.append((
-            gpu_id, info_gpu_name, gpu_load, gpu_free_memory, gpu_used_memory,
-            info_gpu_total_memory, gpu_temperature, gpu_uuid , info_gpu_cuda
-        ))
-
-    n = 10000000                           
-    a = np.ones(n, dtype = np.float64)
-     
-    start = timer()
-    func(a)
-    info_cpu_speed = timer()-start 
-    print("without GPU:", info_cpu_speed )    
-     
-    start = timer()
-    func2(a)
-    info_gpu_speed = timer()-start 
-    #print("with GPU:", info_gpu_speed )
-        
-    print(tabulate(list_gpus, headers=("id", "name", "load", "free memory", "used memory", "total memory",
-                                   "temperature", "uuid",'cuda')))
-    return str(list_gpus)
-
 
 @app.route('/cpu',methods=['POST','GET'])
 def cpu():
@@ -704,8 +659,6 @@ def get_gpu_details():
     return bandwidths
 
 
-
-
 def test_internet_speed():
     try:
         st = speedtest.Speedtest()
@@ -749,7 +702,6 @@ def info():
         hdd()
         get_disk_io_counters()
         ram()
-        gpu()
         flops()
         #check_uptime = get_uptime_days_hours()
         check_uptime = get_uptime()
@@ -828,7 +780,7 @@ def info():
             "gpu_model": f"{num_gpus}X {info_gpu_name}",
             "gpu_cuda": str(info_gpu_cuda),
             "gpu_mem": str(f"{gpu_mem} GB"),
-            "gpu_speed": str(f"{info_gpu_speed:.2f}") +' GB/s',
+            "gpu_speed": str(info_gpu_speed),
             "gpu_tflops" : info_gpu_flops,
             "region": str(get_location()),
             "network_up": str(speeds_net['network_up']),
@@ -883,7 +835,6 @@ def remove_container_with_retry(container_name, max_retries=3, wait_seconds=5):
 
 
 # ฟังก์ชันเพื่อสร้างและรัน Docker container
-
 def warm_up_notebook():
     """ Function to simulate long-running startup tasks. """
     try:
@@ -920,7 +871,6 @@ def spawn_container(container_name, image_name, port, token, base_url):
     except docker.errors.APIError as error:
         logging.error(f"Error encountered while creating container: {error}")
         return None
-    
 
 @app.route('/docker_start', methods=['POST','GET'])
 def docker_start():
@@ -937,8 +887,8 @@ def docker_start():
     info_system = request.json
 
     # เรียกใช้การตรวจสอบและลบคอนเทนเนอร์ที่มีอยู่
-    if not remove_container_with_retry(info_system['container_name']):
-        return jsonify({"error": "Failed to remove existing container after several retries."}), 500
+    #if not remove_container_with_retry(info_system['container_name']):
+    #    return jsonify({"error": "Failed to remove existing container after several retries."}), 500
 
     # ดำเนินการตามปกติถ้า auth key ถูกต้อง
     if request.method == 'POST':
@@ -983,7 +933,6 @@ def docker_start():
     # Return JSON Object
     return json.dumps(value)
 
-    
 # สมมติว่ามีฟังก์ชันสำหรับตรวจสอบ auth key
 def verify_auth_key(key):
     # ตรวจสอบความถูกต้องของ key ที่นี่
@@ -1240,74 +1189,105 @@ def check_uptime_node():
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Interval in minutes for the scheduler
-SCHEDULE_INTERVAL = 15
+SCHEDULE_INTERVAL = 3
+
+def shutdown_scheduler():
+    if scheduler.running:
+        scheduler.shutdown()
+    print("Scheduler has been shut down.")
+
+def signal_handler(signum, frame):
+    print("Received shutdown signal:", signum)
+    shutdown_scheduler()
+
+signal.signal(signal.SIGTERM, signal_handler)
+signal.signal(signal.SIGINT, signal_handler)
+atexit.register(shutdown_scheduler)
 
 # Create a scheduler instance
 scheduler = BackgroundScheduler()
 
 def parse_uptime_output(output):
+    # Regex to capture the different components of uptime
     uptime_regex = r"up\s+((\d+)\s+days?,\s+)?((\d+):(\d+)|(\d+)\s+min),.*"
     match = re.search(uptime_regex, output)
     if match:
         days = match.group(2) or "0"
-        hours, minutes = (match.group(4), match.group(5)) if match.group(3).find(":") > -1 else ("0", match.group(6))
+        if match.group(3).find(":") > -1:
+            hours, minutes = match.group(4), match.group(5)
+        else:
+            hours, minutes = "0", match.group(6)
+        
         return f"{days} Days {hours} Hours {minutes} Minutes"
     return "Could not parse uptime information."
 
 def get_uptime(callback=None):
     try:
         result = subprocess.run(["uptime"], capture_output=True, text=True, check=True)
-        uptime_info = parse_uptime_output(result.stdout)
-        if callback:
-            callback(uptime_info)
+        return parse_uptime_output(result.stdout)
     except subprocess.CalledProcessError as e:
         uptime_info = f"Failed to get uptime: {str(e)}"
-        if callback:
-            callback(uptime_info)
-
-def log_uptime(uptime_info):
-    logging.info(f"System Uptime: {uptime_info}")
-
+        return f"Failed to get uptime: {str(e)}"
+    if callback:
+        callback(uptime_info)
+        
 def uptime():
-    logging.info(f"Uptime function running at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    """Logs current uptime and schedules the next run."""
+    current_time_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
+    logging.info(f"Uptime function running at {current_time_str}")
     thread = threading.Thread(target=get_uptime, args=(log_uptime,))
     thread.start()
     schedule_uptime_task()
 
+def log_uptime(uptime_info):
+    """Callback function to log uptime info."""
+    logging.info(f"System Uptime: {uptime_info}")
+
+
 def schedule_uptime_task():
-    next_run_time = datetime.datetime.now() + datetime.timedelta(minutes=SCHEDULE_INTERVAL)
-    scheduler.add_job(uptime, 'date', next_run_time=next_run_time, replace_existing=True, id='uptime_task')
-    logging.info(f"Next uptime scheduled at {next_run_time.strftime('%Y-%m-%d %H:%M')}")
+    if scheduler.running:
+        next_run_time = datetime.datetime.now() + datetime.timedelta(minutes=SCHEDULE_INTERVAL)
+        scheduler.add_job(uptime, 'interval', minutes=SCHEDULE_INTERVAL, next_run_time=next_run_time, replace_existing=True, id='uptime_task')
+        logging.info(f"Next uptime scheduled at {next_run_time.strftime('%Y-%m-%d %H:%M')}")
+        print("Begin check_uptime_node")
+        check_uptime_node()
+        print("End check_uptime_node")    
+    else:
+        logging.warning("Scheduler is not running. No job has been scheduled.")
 
 def initial_setup():
-    time.sleep(10)  # Simulate a long setup process
-    logging.info("Initial setup complete.")
+    # ตั้งค่าเริ่มต้นที่อาจใช้เวลานาน
+    time.sleep(10)  # แสดงการทำงานที่ใช้เวลานาน
+    print("Initial setup complete.")
 
 def run_scheduler():
     scheduler.start()
-    uptime()  # Initial call to schedule the first task
+    schedule_uptime_task()  # Initial scheduling
     try:
         while True:
             time.sleep(1)
     except (KeyboardInterrupt, SystemExit):
         scheduler.shutdown()
 
-def run_flask_app():
-    from flask import Flask
-    app = Flask(__name__)
-    time.sleep(5)  # Wait for the scheduler setup to complete
-    app.run(host='0.0.0.0', port=5002, use_reloader=False)
+def safe_shutdown():
+    try:
+        scheduler.shutdown()
+        print("Scheduler shut down successfully.")
+    except Exception as e:
+        print(f"Error during scheduler shutdown: {e}")
+
+atexit.register(safe_shutdown)
+signal.signal(signal.SIGINT, lambda signum, frame: safe_shutdown())
+signal.signal(signal.SIGTERM, lambda signum, frame: safe_shutdown())
+
 
 if __name__ == '__main__':
-    initial_thread = threading.Thread(target=initial_setup, daemon=True)
-    scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
-    flask_thread = threading.Thread(target=run_flask_app)
-
-    initial_thread.start()
-    initial_thread.join()  # Wait for the initial setup to complete
-    scheduler_thread.start()
-    flask_thread.start()
-    
+    scheduler.start()
+    schedule_uptime_task()  # Initial scheduling
+    try:
+        app.run(host='0.0.0.0', port=5002, use_reloader=False)
+    except (KeyboardInterrupt, SystemExit):
+        scheduler.shutdown()
     
 
 '''
@@ -1315,7 +1295,6 @@ sudo nano /etc/systemd/system/gpuspeed_client.service
 sudo systemctl enable gpuspeed_client.service
 sudo systemctl restart gpuspeed_client.service
 sudo systemctl status gpuspeed_client.service
-sudo systemctl stop gpuspeed_client.service
 
 journalctl -u gpuspeed_client.service -f   
 '''
