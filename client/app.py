@@ -682,6 +682,25 @@ def remove_words(text):
         text = text.replace(word, "")
     return text
 
+
+@app.route('/cuda_version',methods=['POST','GET'])
+def get_cuda_version():
+    try:
+        # Run the nvidia-smi command
+        result = subprocess.run(['nvidia-smi'], capture_output=True, text=True)
+        if result.returncode != 0:
+            return "Error executing nvidia-smi"
+
+        # Search for the CUDA version in the command output
+        match = re.search(r'CUDA Version:\s*([\d\.]+)', result.stdout)
+        if match:
+            return f"{match.group(1)}"
+        else:
+            return "0"
+
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+    
 @app.route('/info',methods=['POST','GET'])
 def info():
     global info_cpu_model , info_cpu_core , info_cpu_brand , info_cpu_name , info_cpu_speed , info_ram_total
@@ -768,7 +787,13 @@ def info():
         else:
             gpu_mem = "0"
             print("No GPUs")
-            
+
+        # Run the nvidia-smi command to get GPU information
+        result = subprocess.run(['nvidia-smi', '--query-gpu=gpu_name', '--format=csv,noheader'], capture_output=True, text=True)
+        print(result.stdout.strip())
+        info_gpu_name = str(result.stdout.strip())
+
+        info_gpu_cuda = get_cuda_version()
         #ตัดเอาเฉพาะชชื่อเบรนของ CPU อย่างเดียว ซซึ่งบางทีจะมีคำว่า AMD Ryzen 5 4600G with Radeon Graphics
         info_system = {
             "cpu_model": f"{info_cpu_name}",
@@ -913,7 +938,7 @@ def docker_start():
 
         try:
             # จริง ๆ ตอนนี้มันทำงานแล้ว แต่อยากให้ User ดูสถานะ Waiting...สัก 5 วิ
-            #time.sleep(3)  # รอประมาณ 3 วินาทีเพื่อให้ ส่งการตอบกลับไปยัง User 
+            time.sleep(5)  # รอประมาณ 5 วินาทีเพื่อให้ ส่งการตอบกลับไปยัง User มันเป็นจิตวิทยา
             logs = container.logs().decode("utf-8")
 
             print("Jupyter Notebook กำลังรัน")
@@ -1152,11 +1177,41 @@ def check_uptime_node():
     disk_write_speed = round(write_speed, 2)
     disk_read_speed = round(read_speed, 2)
 
+    # Run the nvidia-smi command to get GPU information
+    result = subprocess.run(['nvidia-smi', '--query-gpu=gpu_name', '--format=csv,noheader'], capture_output=True, text=True)
+    print(result.stdout.strip())
+    info_gpu_name = str(result.stdout.strip())
+
+    info_gpu_name = info_gpu_name.replace("NVIDIA", "")
+    info_gpu_name = info_gpu_name.replace("GeForce", "")
+                            
+    info_gpu_cuda = get_cuda_version()
+
+
+    if torch.cuda.is_available():
+        num_gpus = torch.cuda.device_count()
+        print(f"Number of GPUs: {num_gpus}")
+
+        for i in range(num_gpus):
+            gpu = torch.cuda.get_device_properties(i)
+            print(f"GPU ID: {i}, Name: {gpu.name}")
+            print(f"Total Memory: {gpu.total_memory / (1024**2)} MB")  # Convert from bytes to MB
+            print(f"Multiprocessors (Cores): {gpu.multi_processor_count}")
+
+        total_memory_mb = gpu.total_memory / (1024**2)  # example value in MB
+        gpu_mem = round(total_memory_mb / 1024)  # convert MB to GB and round
+        print(f"Total Memory: {gpu_mem} GB")
+    else:
+        gpu_mem = "0"
+        print("No GPUs")
+
     data = {
         'online_duration' : check_uptime ,
         'ip': ip_address,
         'cpu_model' : info_cpu_name,
         'gpu_mem': str(gpu_mem)+" GB" ,
+        "gpu_model": f"{num_gpus}X {info_gpu_name}",
+        "gpu_cuda": str(info_gpu_cuda),
         'gpu_speed' : info_gpu_speed,
         'network_down': speeds_net['network_down'],  # สมมติว่าได้ค่า download speed 50.5 Mbps
         'network_up': speeds_net['network_up'],    # สมมติว่าได้ค่า upload speed 10.2 Mbps
