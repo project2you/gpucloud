@@ -1,13 +1,24 @@
 #เมื่อสร้าง Docker เสร็จแล้วทำการ Build
-docker build --no-cache -t jupyter-nvidia-gpucloud .
+
+export DOCKER_BUILDKIT=1
+
+docker build --no-cache -t jupyter-nvidia-gpuspeed:1.0 .
+
+
+docker run -it -p 8888:8000 -e JUPYTER_BASE_URL='/abcd' -e JUPYTER_TOKEN='1234' jupyter-nvidia-gpuspeed:1.0
+
+
+sudo docker image prune
 
 docker login
-docker tag jupyter-nvidia-gpucloud project2you/jupyter-nvidia-gpucloud:1.0
-docker push  project2you/jupyter-nvidia-gpucloud:1.0
+docker tag jupyter-nvidia-gpuspeed:1.0 project2you/jupyter-nvidia-gpuspeed:1.0
+
+docker push  project2you/jupyter-nvidia-gpuspeed:1.0
 
 sudo chmod +x install.sh
 bash install.sh
 
 sudo systemctl daemon-reload
-sudo systemctl restart gpucloud_client
-sudo journalctl -u gpucloud_client -f
+sudo systemctl restart gpuspeed_client
+sudo journalctl -u gpuspeed_client -f
+(env) ubuntu@3060:~/dokcer$
