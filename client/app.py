@@ -860,45 +860,49 @@ def remove_container_with_retry(container_name, max_retries=3, wait_seconds=5):
 
 
 # ฟังก์ชันเพื่อสร้างและรัน Docker container
-def warm_up_notebook():
-    """ Function to simulate long-running startup tasks. """
+def remove_existing_container(container_name):
+    """ Function to safely remove an existing container, handling errors quietly. """
     try:
-        time.sleep(5)  # Simulate the time taken to preload data
+        existing_container = client.containers.get(container_name)
+        logging.info(f'Removing existing container with name {container_name}')
+        existing_container.remove(force=True)
+
+        # Wait until the container is fully removed
+        timeout = time.time() + 60  # Set timeout for 60 seconds
+        while True:
+            try:
+                client.containers.get(container_name)
+                if time.time() > timeout:
+                    logging.error("Timeout reached while waiting for container removal.")
+                    break
+                time.sleep(1)
+            except docker.errors.NotFound:
+                logging.info(f'Container {container_name} has been removed')
+                break
+    except docker.errors.NotFound:
+        logging.info(f'No existing container with name {container_name} found')
+    except docker.errors.APIError as error:
+        if "is already in progress" in str(error):
+            # If removal is already in progress, wait until it's completed
+            logging.info(f'Removal of container {container_name} is already in progress. Waiting...')
+            time.sleep(5)  # Wait for a few seconds and then retry the removal check
+            remove_existing_container(container_name)  # Recursive call to ensure the container is removed
+        else:
+            logging.error(f'Error encountered while removing container: {error}')
+
+def warm_up_notebook(container):
+    """ Function to warm up the container by pre-loading data or performing initial tasks. """
+    try:
+        logging.info("Starting warm-up of the notebook environment...")
+        result = container.exec_run("python3 -c 'print(\"Warming up...\")'", detach=False)
+        if result.exit_code != 0:
+            logging.error(f"Warm-up error: {result.output.decode().strip()}")
+            return
+        logging.info(f"Warm-up result: {result.output.decode().strip()}")
+        time.sleep(5)  # Simulate additional preparation time
         logging.info("Notebook environment is pre-warmed and ready.")
     except Exception as e:
-        logging.error(f"Error during warming up: {str(e)}")
-
-
-
-def remove_existing_container(container_name):
-    while True:
-        try:
-            existing_container = client.containers.get(container_name)
-            logging.info(f'Removing existing container with name {container_name}')
-            existing_container.remove(force=True)
-            
-            # รอจนกว่าคอนเทนเนอร์จะถูกลบเสร็จ
-            while True:
-                try:
-                    client.containers.get(container_name)
-                    time.sleep(1)
-                except docker.errors.NotFound:
-                    logging.info(f'Container {container_name} has been removed')
-                    break
-            break
-        except docker.errors.APIError as error:
-            if "removal of container" in str(error) and "is already in progress" in str(error):
-                logging.warning(f'Removal of container {container_name} is already in progress, retrying...')
-                time.sleep(2)
-            elif "No such container" in str(error):
-                logging.info(f'No existing container with name {container_name} found')
-                break
-            else:
-                logging.error(f'Error encountered while removing container: {error}')
-                break
-    
-    # เรียก warm_up_notebook หลังจากลบคอนเทนเนอร์เสร็จ
-    warm_up_notebook()
+        logging.error(f"Error during container warm-up: {str(e)}")
 
 def spawn_container(container_name, image_name, port, token, base_url):
     """ Function to create and run a Docker container for Jupyter with GPU support. """
@@ -906,10 +910,8 @@ def spawn_container(container_name, image_name, port, token, base_url):
         port_mapping = {'8888/tcp': port}
         volume_mapping = {'/path_on_host': {'bind': '/path_in_container', 'mode': 'rw'}}
         environment_vars = {'JUPYTER_TOKEN': token, 'BASE_URL': base_url}
-        
-        # ลบคอนเทนเนอร์ที่มีชื่อซ้ำก่อน
+
         remove_existing_container(container_name)
-        
         container = client.containers.run(image_name,
                                           name=container_name,
                                           ports=port_mapping,
@@ -924,12 +926,12 @@ def spawn_container(container_name, image_name, port, token, base_url):
                                               )
                                           ])
         logging.info(f'Container {container_name} is running with ID: {container.id}')
-        
+        warm_up_notebook(container)
         return container
     except docker.errors.APIError as error:
         logging.error(f"Error encountered while creating container: {error}")
         return None
-    
+
     
 @app.route('/docker_start', methods=['POST','GET'])
 def docker_start():
@@ -1387,3 +1389,4 @@ sudo systemctl status gpuspeed_client.service
 
 journalctl -u gpuspeed_client.service -f   
 '''
+
