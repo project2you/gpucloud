@@ -863,16 +863,52 @@ def remove_container_with_retry(container_name, max_retries=3, wait_seconds=5):
 def warm_up_notebook():
     """ Function to simulate long-running startup tasks. """
     try:
-        time.sleep(10)  # Simulate the time taken to preload data
+        time.sleep(5)  # Simulate the time taken to preload data
         logging.info("Notebook environment is pre-warmed and ready.")
     except Exception as e:
         logging.error(f"Error during warming up: {str(e)}")
+
+
+
+def remove_existing_container(container_name):
+    while True:
+        try:
+            existing_container = client.containers.get(container_name)
+            logging.info(f'Removing existing container with name {container_name}')
+            existing_container.remove(force=True)
+            
+            # รอจนกว่าคอนเทนเนอร์จะถูกลบเสร็จ
+            while True:
+                try:
+                    client.containers.get(container_name)
+                    time.sleep(1)
+                except docker.errors.NotFound:
+                    logging.info(f'Container {container_name} has been removed')
+                    break
+            break
+        except docker.errors.APIError as error:
+            if "removal of container" in str(error) and "is already in progress" in str(error):
+                logging.warning(f'Removal of container {container_name} is already in progress, retrying...')
+                time.sleep(2)
+            elif "No such container" in str(error):
+                logging.info(f'No existing container with name {container_name} found')
+                break
+            else:
+                logging.error(f'Error encountered while removing container: {error}')
+                break
+    
+    # เรียก warm_up_notebook หลังจากลบคอนเทนเนอร์เสร็จ
+    warm_up_notebook()
+
 def spawn_container(container_name, image_name, port, token, base_url):
     """ Function to create and run a Docker container for Jupyter with GPU support. """
     try:
         port_mapping = {'8888/tcp': port}
         volume_mapping = {'/path_on_host': {'bind': '/path_in_container', 'mode': 'rw'}}
         environment_vars = {'JUPYTER_TOKEN': token, 'BASE_URL': base_url}
+        
+        # ลบคอนเทนเนอร์ที่มีชื่อซ้ำก่อน
+        remove_existing_container(container_name)
         
         container = client.containers.run(image_name,
                                           name=container_name,
@@ -889,14 +925,12 @@ def spawn_container(container_name, image_name, port, token, base_url):
                                           ])
         logging.info(f'Container {container_name} is running with ID: {container.id}')
         
-        # Start the background thread when the container starts
-        threading.Thread(target=warm_up_notebook).start()
-
         return container
     except docker.errors.APIError as error:
         logging.error(f"Error encountered while creating container: {error}")
         return None
-
+    
+    
 @app.route('/docker_start', methods=['POST','GET'])
 def docker_start():
     global container_name
@@ -937,8 +971,8 @@ def docker_start():
             return jsonify({"error": "Failed to create container."}), 500
 
         try:
-            # จริง ๆ ตอนนี้มันทำงานแล้ว แต่อยากให้ User ดูสถานะ Waiting...สัก 5 วิ
-            time.sleep(5)  # รอประมาณ 5 วินาทีเพื่อให้ ส่งการตอบกลับไปยัง User มันเป็นจิตวิทยา
+            # จริง ๆ ตอนนี้มันทำงานแล้ว แต่อยากให้ User ดูสถานะ Waiting...สัก 10 วิ
+            #time.sleep(10)  # รอประมาณ 10 วินาทีเพื่อให้ ส่งการตอบกลับไปยัง User
             logs = container.logs().decode("utf-8")
 
             print("Jupyter Notebook กำลังรัน")
@@ -1244,7 +1278,7 @@ def check_uptime_node():
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Interval in minutes for the scheduler
-SCHEDULE_INTERVAL = 3
+SCHEDULE_INTERVAL = 15
 
 def shutdown_scheduler():
     if scheduler.running:
@@ -1353,4 +1387,3 @@ sudo systemctl status gpuspeed_client.service
 
 journalctl -u gpuspeed_client.service -f   
 '''
-
